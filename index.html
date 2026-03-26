@@ -484,14 +484,16 @@ async function saveResults(payload) {
       return;
     }
 
-    const response = await fetch(WEBHOOK_URL, {
+    await fetch(WEBHOOK_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
       body: JSON.stringify(payload)
     });
 
-    const result = await response.text();
-    console.log("Respuesta Sheets:", result);
+    console.log("Solicitud enviada al webhook.");
   } catch (error) {
     console.error("Error guardando resultados:", error);
   }
