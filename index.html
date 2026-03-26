@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Evaluación Matemática Inteligente</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: Arial, sans-serif;
       background: linear-gradient(135deg, #667eea, #764ba2);
@@ -15,572 +19,647 @@
       min-height: 100vh;
       margin: 0;
       padding: 20px;
-      box-sizing: border-box;
     }
 
     .card {
       background: rgba(255,255,255,0.12);
       padding: 28px;
-      border-radius: 20px;
+      border-radius: 24px;
       width: 100%;
-      max-width: 760px;
+      max-width: 860px;
       backdrop-filter: blur(10px);
       box-shadow: 0 10px 35px rgba(0,0,0,0.25);
     }
 
-    input, select, button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border-radius: 10px;
-      border: none;
-      box-sizing: border-box;
-      font-size: 15px;
+    h2 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-size: 24px;
     }
 
-    button {
-      cursor: pointer;
+    h3 {
+      margin-top: 0;
+      margin-bottom: 18px;
+      font-size: 18px;
     }
 
-    .row-buttons {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 10px;
-    }
-
-    .row-buttons button {
-      flex: 1;
-      min-width: 200px;
+    .exam-layout {
+      max-width: 760px;
+      margin: 0 auto;
     }
 
     .image-box {
-      max-width: 400px;
-      margin: 0 auto
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto 16px auto;
+      background: rgba(255,255,255,0.08);
+      border-radius: 18px;
+      padding: 10px;
     }
 
-    .question-image, .hint-image {
+    .hint-box {
+      width: 100%;
+      max-width: 420px;
+      margin: 10px auto 0 auto;
+    }
+
+    .question-image,
+    .hint-image {
       display: block;
       width: 100%;
-      max-height: 140px;
+      max-height: 150px;
       object-fit: contain;
       border-radius: 12px;
       background: white;
       padding: 8px;
     }
 
+    input,
+    select,
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 12px;
+      border-radius: 12px;
+      border: none;
+      font-size: 15px;
+    }
+
+    input,
+    select {
+      background: rgba(255,255,255,0.95);
+    }
+
+    button {
+      cursor: pointer;
+      background: rgba(255,255,255,0.92);
+      color: #111;
+      font-weight: 500;
+    }
+
+    button:hover {
+      opacity: 0.96;
+    }
+
+    .row-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      margin-bottom: 6px;
+    }
+
+    .row-buttons button {
+      flex: 1;
+      min-width: 220px;
+      margin-top: 0;
+    }
+
+    .results-layout {
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
     .summary-box {
-      background: rgba(255,255,255,0.08);
-      padding: 15px;
-      border-radius: 14px;
+      background: rgba(255,255,255,0.10);
+      padding: 18px;
+      border-radius: 16px;
       margin-top: 14px;
     }
 
+    .summary-box p {
+      margin: 8px 0;
+      line-height: 1.5;
+    }
+
+    .summary-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
     .wa-btn {
+      display: block;
+      width: 100%;
+      max-width: 620px;
+      margin: 18px auto 0 auto;
       background: #25D366;
       color: white;
       text-decoration: none;
-      display: inline-block;
-      margin-top: 18px;
-      padding: 12px 18px;
-      border-radius: 10px;
       text-align: center;
+      padding: 15px 18px;
+      border-radius: 12px;
+      font-weight: bold;
+    }
+
+    .wa-btn:hover {
+      opacity: 0.94;
+    }
+
+    .loading-text {
+      text-align: center;
+      font-size: 16px;
+      margin-top: 20px;
+    }
+
+    @media (max-width: 640px) {
+      .card {
+        padding: 20px;
+      }
+
+      .row-buttons {
+        flex-direction: column;
+      }
+
+      .row-buttons button {
+        min-width: 100%;
+      }
+
+      .question-image,
+      .hint-image {
+        max-height: 130px;
+      }
     }
   </style>
 </head>
 <body>
-<div class="card">
-  <h2>Evaluación Matemática</h2>
-  <div id="content"></div>
-</div>
+  <div class="card">
+    <h2>Evaluación Matemática</h2>
+    <div id="content"></div>
+  </div>
 
-<script>
-/* =========================
-   CONFIGURACIÓN
-========================= */
-const OPENAI_API_KEY = "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";
-const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyx0VGt-WbzWl3LRuO3gkZQzDU6CW3tOMP_cPPK6JG44NLkjuN3qvAZEyapTdiLeufyHg/exec";
-const WHATSAPP_LINK = "https://wa.me/51961760357?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20Matlab";
+  <script>
+    /* =========================
+       CONFIGURACIÓN
+    ========================= */
+    const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyx0VGt-WbzWl3LRuO3gkZQzDU6CW3tOMP_cPPK6JG44NLkjuN3qvAZEyapTdiLeufyHg/exec";
+    const WHATSAPP_LINK = "https://wa.me/51961760357?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20Matlab";
 
-const MAX_CONCEPTUAL_SCORE = 60;
-const MAX_SPEED_SCORE = 60;
-const MAX_STRATEGY_SCORE = 30;
+    const MAX_CONCEPTUAL_SCORE = 60;
+    const MAX_SPEED_SCORE = 60;
+    const MAX_STRATEGY_SCORE = 30;
 
-/* =========================
-   ESTADO GLOBAL
-========================= */
-let student = {};
-let responses = [];
-let totalCorrect = 0;
-let totalHintsRequested = 0;
+    /* =========================
+       ESTADO GLOBAL
+    ========================= */
+    let student = {};
+    let responses = [];
+    let totalCorrect = 0;
+    let totalHintsRequested = 0;
 
-let conceptualScore = 0;
-let speedScore = 0;
-let strategyScore = 0;
+    let conceptualScore = 0;
+    let speedScore = 0;
+    let strategyScore = 0;
 
-let examStartTime = null;
-let questionStartTime = null;
-let current = "q1";
+    let examStartTime = null;
+    let questionStartTime = null;
+    let current = "q1";
+    let isSubmitting = false;
 
-let currentHintsUsed = {
-  theory: false,
-  formula: false
-};
+    let currentHintsUsed = {
+      theory: false,
+      formula: false
+    };
 
-/* =========================
-   PREGUNTAS
-   Reemplaza imágenes y respuestas
-========================= */
-const questions = {
-  q1: {
-    text: "Pregunta 1: Opera",
-    image: "https://i.imgur.com/5F97ZEt.png",
-    correct: "1",
-    next: "q2",
-    hintTheoryImage: "https://i.imgur.com/9fJNvQv.jpg",
-    hintFormulaImage: "https://i.imgur.com/hmHot9T.png"
-  },
-  q2_good: {
-    text: "Pregunta 2: Opera",
-    image: "https://i.imgur.com/mMTtiiZ.jpg",
-    correct: "20",
-    next: "q3",
-    hintTheoryImage: "https://i.imgur.com/uAOznxq.jpg",
-    hintFormulaImage: "https://i.imgur.com/b5wvacD.jpg"
-  },
-  q2_bad: {
-    text: "Pregunta 2: Halla el número si:",
-    image: "https://i.imgur.com/sMhouoW.jpg",
-    correct: "4",
-    next: "q3",
-    hintTheoryImage: "https://i.imgur.com/9l4vf38.jpg",
-    hintFormulaImage: "https://i.imgur.com/K79yzu5.jpg"
-  },
-  q3: {
-    text: "Pregunta 3: Opera y da tu respuesta en fracción",
-    image: "https://i.imgur.com/WQqRQLH.jpg",
-    correct: "5/4",
-    next: "q4",
-    hintTheoryImage: "https://i.imgur.com/Ss3HxZ3.jpg",
-    hintFormulaImage: "https://i.imgur.com/WKs6woO.jpg"
-  },
-  q4_good: {
-    text: "Pregunta 4: Opera y da tu respuesta en fracción",
-    image: "https://i.imgur.com/prjDu8E.jpg",
-    correct: "5/2",
-    next: "q5",
-    hintTheoryImage: "https://i.imgur.com/bl5QcEH.jpg",
-    hintFormulaImage: "https://i.imgur.com/EcvrZuw.jpg"
-  },
-  q4_bad: {
-    text: "Pregunta 4: Simplifica y da tu respuesta en fracción",
-    image: "https://i.imgur.com/GALO9Jv.jpg",
-    correct: "2/3",
-    next: "q5",
-    hintTheoryImage: "https://i.imgur.com/K4NnRdC.jpg",
-    hintFormulaImage: "https://i.imgur.com/XVm4WbX.jpg"
-  },
-  q5: {
-    text: "Pregunta 5: Hallar el número mayor en:",
-    image: "https://i.imgur.com/jtoeaD8.jpg",
-    correct: "12",
-    next: "q6",
-    hintTheoryImage: "https://i.imgur.com/208a88n.jpg",
-    hintFormulaImage: "https://i.imgur.com/hGN74QZ.jpg"
-  },
-  q6_good: {
-    text: "Pregunta 6: Hallar el precio en:",
-    image: "https://i.imgur.com/DXXkkhq.jpg",
-    correct: "32",
-    next: "q7",
-    hintTheoryImage: "https://i.imgur.com/xtbC2zW.jpg",
-    hintFormulaImage: "https://i.imgur.com/6yEgv4o.jpg"
-  },
-  q6_bad: {
-    text: "Pregunta 6: Hallar",
-    image: "https://i.imgur.com/aQJOKkb.jpg",
-    correct: "2",
-    next: "q7",
-    hintTheoryImage: "https://i.imgur.com/nvQSncR.jpg",
-    hintFormulaImage: "https://i.imgur.com/9LK8QsM.jpg"
-  },
-  q7: {
-    text: "Pregunta 7: Calcula",
-    image: "https://i.imgur.com/dUrcbCh.jpg",
-    correct: "16",
-    next: "q8",
-    hintTheoryImage: "https://i.imgur.com/85Kboo9.jpg",
-    hintFormulaImage: "https://i.imgur.com/bkzgPiP.jpg"
-  },
-  q8_good: {
-    text: "Pregunta 8: Calcula",
-    image: "https://i.imgur.com/LuuSgRY.jpg",
-    correct: "14",
-    next: "q9",
-    hintTheoryImage: "https://i.imgur.com/VEHf9JP.jpg",
-    hintFormulaImage: "https://i.imgur.com/q1ngFUW.jpg"
-  },
-  q8_bad: {
-    text: "Pregunta 8: Calcula",
-    image: "https://i.imgur.com/LONQpBz.jpg",
-    correct: "11",
-    next: "q9",
-    hintTheoryImage: "https://i.imgur.com/gxDYKzQ.jpg",
-    hintFormulaImage: "hhttps://i.imgur.com/ucXnglV.jpg"
-  },
-  q9: {
-    text: "Pregunta 9: Halla el valor de x",
-    image: "https://i.imgur.com/oas4IQG.jpg",
-    correct: "4",
-    next: "q10",
-    hintTheoryImage: "https://i.imgur.com/zfw133p.jpg",
-    hintFormulaImage: "https://i.imgur.com/jBY6vWx.jpg"
-  },
-  q10: {
-    text: "Pregunta 10: Hallar el número",
-    image: "https://i.imgur.com/hMdj4nr.jpg",
-    correct: "6",
-    next: null,
-    hintTheoryImage: "https://i.imgur.com/p7grfIY.jpg",
-    hintFormulaImage: "https://i.imgur.com/3JXxQmB.jpg"
-  }
-};
-
-/* =========================
-   RENDER INICIAL
-========================= */
-function renderStart() {
-  document.getElementById("content").innerHTML = `
-    <input id="guardianName" placeholder="Nombre del padre, madre o apoderado">
-    <input id="guardianPhone" placeholder="Teléfono del padre, madre o apoderado">
-    <input id="studentName" placeholder="Nombre del alumno">
-    <input id="studentAge" placeholder="Edad del alumno" type="number">
-    <input id="studentGrade" placeholder="Grado del alumno">
-    <select id="institutionType">
-      <option value="">Institución del alumno</option>
-      <option value="Pública">Pública</option>
-      <option value="Privada">Privada</option>
-    </select>
-    <button onclick="startExam()">Comenzar</button>
-  `;
-}
-
-function startExam() {
-  student.guardianName = document.getElementById("guardianName").value.trim();
-  student.guardianPhone = document.getElementById("guardianPhone").value.trim();
-  student.name = document.getElementById("studentName").value.trim();
-  student.age = document.getElementById("studentAge").value.trim();
-  student.grade = document.getElementById("studentGrade").value.trim();
-  student.institutionType = document.getElementById("institutionType").value;
-
-  if (
-    !student.guardianName ||
-    !student.guardianPhone ||
-    !student.name ||
-    !student.age ||
-    !student.grade ||
-    !student.institutionType
-  ) {
-    alert("Completa todos los campos.");
-    return;
-  }
-
-  examStartTime = Date.now();
-  showQuestion("q1");
-}
-
-/* =========================
-   PREGUNTAS
-========================= */
-function showQuestion(id) {
-  current = id;
-  questionStartTime = Date.now();
-  currentHintsUsed = { theory: false, formula: false };
-
-  const q = questions[id];
-
-  document.getElementById("content").innerHTML = `
-    <h3>${q.text}</h3>
-    <img class="question-image" src="${q.image}" alt="Pregunta">
-
-    <div class="row-buttons">
-      <button onclick="showHint('theory')">Dame una pista teórica</button>
-      <button onclick="showHint('formula')">Dame una pista fórmula</button>
-    </div>
-
-    <div id="hintTheoryContainer"></div>
-    <div id="hintFormulaContainer"></div>
-
-    <input id="answer" placeholder="Escribe tu respuesta">
-    <button onclick="submitAnswer()">Responder</button>
-  `;
-}
-
-function showHint(type) {
-  const q = questions[current];
-
-  if (type === "theory" && !currentHintsUsed.theory) {
-    currentHintsUsed.theory = true;
-    totalHintsRequested++;
-    document.getElementById("hintTheoryContainer").innerHTML = `
-      <img class="hint-image" src="${q.hintTheoryImage}" alt="Pista teórica">
-    `;
-  }
-
-  if (type === "formula" && !currentHintsUsed.formula) {
-    currentHintsUsed.formula = true;
-    totalHintsRequested++;
-    document.getElementById("hintFormulaContainer").innerHTML = `
-      <img class="hint-image" src="${q.hintFormulaImage}" alt="Pista fórmula">
-    `;
-  }
-}
-
-/* =========================
-   PUNTAJES
-========================= */
-function countHintsUsed() {
-  let count = 0;
-  if (currentHintsUsed.theory) count++;
-  if (currentHintsUsed.formula) count++;
-  return count;
-}
-
-function getConceptualPoints(isCorrect, hints) {
-  if (!isCorrect) return 0;
-  if (hints === 0) return 3;
-  if (hints === 1) return 2;
-  return 1;
-}
-
-function getSpeedPoints(isCorrect, timeSeconds) {
-  if (!isCorrect) return 0;
-  if (timeSeconds < 180) return 3;
-  if (timeSeconds <= 300) return 2;
-  return 1;
-}
-
-function getStrategyPoints(questionId, isCorrect, hints) {
-  const match = questionId.match(/^q(\d+)/);
-  if (!match) return 0;
-
-  const number = parseInt(match[1], 10);
-  const isEven = number % 2 === 0;
-
-  if (!isEven || !isCorrect) return 0;
-
-  if (hints === 0) return 3;
-  if (hints === 1) return 2;
-  return 1;
-}
-
-function getPercentage(score, maxScore) {
-  return Math.round((score / maxScore) * 100);
-}
-
-function getConceptualConclusion(score) {
-  if (score <= 15) return "Poca base teórica, necesita apoyo constante.";
-  if (score <= 30) return "Tiene nociones, pero debe practicar bastante.";
-  if (score <= 45) return "Nivel teórico promedio, puede mejorar.";
-  return "Buen nivel, puede aprender conocimientos nuevos.";
-}
-
-function getSpeedConclusion(score) {
-  if (score <= 15) return "Necesita mucha supervisión de ejercicios.";
-  if (score <= 30) return "Se demora bastante, pero puede resolver ejercicios.";
-  if (score <= 45) return "Nivel de tiempo promedio, puede mejorar con práctica.";
-  return "Buen nivel de resolución, puede probar ejercicios más adelantados.";
-}
-
-function getStrategyConclusion(score) {
-  if (score <= 7.5) return "Poco nivel de razonamiento, necesita apoyo.";
-  if (score <= 15) return "Tiene ciertas estrategias, pero debe practicar bastante.";
-  if (score <= 22.5) return "Nivel de razonamiento promedio, puede mejorar.";
-  return "Buen nivel, puede aprender conocimientos adelantados.";
-}
-
-/* =========================
-   ENVÍO DE RESPUESTA
-========================= */
-function submitAnswer() {
-  const q = questions[current];
-  const answer = document.getElementById("answer").value.trim();
-  const timeSeconds = Math.round((Date.now() - questionStartTime) / 1000);
-  const isCorrect = answer == q.correct;
-  const hints = countHintsUsed();
-
-  if (isCorrect) totalCorrect++;
-
-  const conceptualPoints = getConceptualPoints(isCorrect, hints);
-  const speedPoints = getSpeedPoints(isCorrect, timeSeconds);
-  const strategyPoints = getStrategyPoints(current, isCorrect, hints);
-
-  conceptualScore += conceptualPoints;
-  speedScore += speedPoints;
-  strategyScore += strategyPoints;
-
-  responses.push({
-    questionId: current,
-    answer,
-    correct: isCorrect,
-    timeSeconds,
-    hintsUsed: hints,
-    conceptualPoints,
-    speedPoints,
-    strategyPoints
-  });
-
-  let next;
-  if (current.includes("q2") || current.includes("q4") || current.includes("q6") || current.includes("q8")) {
-    next = q.next;
-  } else if (q.next && questions[q.next + "_good"]) {
-    next = isCorrect ? q.next + "_good" : q.next + "_bad";
-  } else {
-    next = q.next;
-  }
-
-  if (next) showQuestion(next);
-  else finishExam();
-}
-
-/* =========================
-   IA
-========================= */
-async function getAIDiagnosis(indicator, score, maxScore, conclusion) {
-  try {
-    const percentage = getPercentage(score, maxScore);
-
-    const prompt = `
-Eres un profesor de matemáticas.
-Redacta un comentario breve, cálido y profesional para padres.
-Indicador: ${indicator}
-Puntaje: ${score}/${maxScore}
-Porcentaje: ${percentage}%
-Conclusión base: ${conclusion}
-
-Redacta máximo 3 líneas.
-`;
-
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer " + OPENAI_API_KEY,
-        "Content-Type": "application/json"
+    /* =========================
+       PREGUNTAS
+    ========================= */
+    const questions = {
+      q1: {
+        text: "Pregunta 1: Opera",
+        image: "https://i.imgur.com/5F97ZEt.png",
+        correct: "1",
+        next: "q2",
+        hintTheoryImage: "https://i.imgur.com/9fJNvQv.jpg",
+        hintFormulaImage: "https://i.imgur.com/hmHot9T.png"
       },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }]
-      })
-    });
+      q2_good: {
+        text: "Pregunta 2: Opera",
+        image: "https://i.imgur.com/mMTtiiZ.jpg",
+        correct: "20",
+        next: "q3",
+        hintTheoryImage: "https://i.imgur.com/uAOznxq.jpg",
+        hintFormulaImage: "https://i.imgur.com/b5wvacD.jpg"
+      },
+      q2_bad: {
+        text: "Pregunta 2: Halla el número si:",
+        image: "https://i.imgur.com/sMhouoW.jpg",
+        correct: "4",
+        next: "q3",
+        hintTheoryImage: "https://i.imgur.com/9l4vf38.jpg",
+        hintFormulaImage: "https://i.imgur.com/K79yzu5.jpg"
+      },
+      q3: {
+        text: "Pregunta 3: Opera y da tu respuesta en fracción",
+        image: "https://i.imgur.com/WQqRQLH.jpg",
+        correct: "5/4",
+        next: "q4",
+        hintTheoryImage: "https://i.imgur.com/Ss3HxZ3.jpg",
+        hintFormulaImage: "https://i.imgur.com/WKs6woO.jpg"
+      },
+      q4_good: {
+        text: "Pregunta 4: Opera y da tu respuesta en fracción",
+        image: "https://i.imgur.com/prjDu8E.jpg",
+        correct: "5/2",
+        next: "q5",
+        hintTheoryImage: "https://i.imgur.com/bl5QcEH.jpg",
+        hintFormulaImage: "https://i.imgur.com/EcvrZuw.jpg"
+      },
+      q4_bad: {
+        text: "Pregunta 4: Simplifica y da tu respuesta en fracción",
+        image: "https://i.imgur.com/GALO9Jv.jpg",
+        correct: "2/3",
+        next: "q5",
+        hintTheoryImage: "https://i.imgur.com/K4NnRdC.jpg",
+        hintFormulaImage: "https://i.imgur.com/XVm4WbX.jpg"
+      },
+      q5: {
+        text: "Pregunta 5: Hallar el número mayor en:",
+        image: "https://i.imgur.com/jtoeaD8.jpg",
+        correct: "12",
+        next: "q6",
+        hintTheoryImage: "https://i.imgur.com/208a88n.jpg",
+        hintFormulaImage: "https://i.imgur.com/hGN74QZ.jpg"
+      },
+      q6_good: {
+        text: "Pregunta 6: Hallar el precio en:",
+        image: "https://i.imgur.com/DXXkkhq.jpg",
+        correct: "32",
+        next: "q7",
+        hintTheoryImage: "https://i.imgur.com/xtbC2zW.jpg",
+        hintFormulaImage: "https://i.imgur.com/6yEgv4o.jpg"
+      },
+      q6_bad: {
+        text: "Pregunta 6: Hallar",
+        image: "https://i.imgur.com/aQJOKkb.jpg",
+        correct: "2",
+        next: "q7",
+        hintTheoryImage: "https://i.imgur.com/nvQSncR.jpg",
+        hintFormulaImage: "https://i.imgur.com/9LK8QsM.jpg"
+      },
+      q7: {
+        text: "Pregunta 7: Calcula",
+        image: "https://i.imgur.com/dUrcbCh.jpg",
+        correct: "16",
+        next: "q8",
+        hintTheoryImage: "https://i.imgur.com/85Kboo9.jpg",
+        hintFormulaImage: "https://i.imgur.com/bkzgPiP.jpg"
+      },
+      q8_good: {
+        text: "Pregunta 8: Calcula",
+        image: "https://i.imgur.com/LuuSgRY.jpg",
+        correct: "14",
+        next: "q9",
+        hintTheoryImage: "https://i.imgur.com/VEHf9JP.jpg",
+        hintFormulaImage: "https://i.imgur.com/q1ngFUW.jpg"
+      },
+      q8_bad: {
+        text: "Pregunta 8: Calcula",
+        image: "https://i.imgur.com/LONQpBz.jpg",
+        correct: "11",
+        next: "q9",
+        hintTheoryImage: "https://i.imgur.com/gxDYKzQ.jpg",
+        hintFormulaImage: "https://i.imgur.com/ucXnglV.jpg"
+      },
+      q9: {
+        text: "Pregunta 9: Halla el valor de x",
+        image: "https://i.imgur.com/oas4IQG.jpg",
+        correct: "4",
+        next: "q10",
+        hintTheoryImage: "https://i.imgur.com/zfw133p.jpg",
+        hintFormulaImage: "https://i.imgur.com/jBY6vWx.jpg"
+      },
+      q10: {
+        text: "Pregunta 10: Hallar el número",
+        image: "https://i.imgur.com/hMdj4nr.jpg",
+        correct: "6",
+        next: null,
+        hintTheoryImage: "https://i.imgur.com/p7grfIY.jpg",
+        hintFormulaImage: "https://i.imgur.com/3JXxQmB.jpg"
+      }
+    };
 
-    const data = await response.json();
-    return data?.choices?.[0]?.message?.content || conclusion;
-  } catch (error) {
-    return conclusion;
-  }
-}
-
-/* =========================
-   GUARDAR EN SHEETS
-========================= */
-async function saveResults(payload) {
-  try {
-    if (!WEBHOOK_URL || WEBHOOK_URL === "PEGA_AQUI_TU_LINK_DE_APPS_SCRIPT") {
-      console.log("Webhook no configurado.");
-      return;
+    /* =========================
+       RENDER INICIAL
+    ========================= */
+    function renderStart() {
+      document.getElementById("content").innerHTML = `
+        <div class="exam-layout">
+          <input id="guardianName" placeholder="Nombre del padre, madre o apoderado">
+          <input id="guardianPhone" placeholder="Teléfono del padre, madre o apoderado">
+          <input id="studentName" placeholder="Nombre del alumno">
+          <input id="studentAge" placeholder="Edad del alumno" type="number">
+          <input id="studentGrade" placeholder="Grado del alumno">
+          <select id="institutionType">
+            <option value="">Institución del alumno</option>
+            <option value="Pública">Pública</option>
+            <option value="Privada">Privada</option>
+          </select>
+          <button onclick="startExam()">Comenzar</button>
+        </div>
+      `;
     }
 
-    await fetch(WEBHOOK_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8"
-      },
-      body: JSON.stringify(payload)
-    });
+    function startExam() {
+      student.guardianName = document.getElementById("guardianName").value.trim();
+      student.guardianPhone = document.getElementById("guardianPhone").value.trim();
+      student.name = document.getElementById("studentName").value.trim();
+      student.age = document.getElementById("studentAge").value.trim();
+      student.grade = document.getElementById("studentGrade").value.trim();
+      student.institutionType = document.getElementById("institutionType").value;
 
-    console.log("Solicitud enviada al webhook.");
-  } catch (error) {
-    console.error("Error guardando resultados:", error);
-  }
-}
+      if (
+        !student.guardianName ||
+        !student.guardianPhone ||
+        !student.name ||
+        !student.age ||
+        !student.grade ||
+        !student.institutionType
+      ) {
+        alert("Completa todos los campos.");
+        return;
+      }
 
-/* =========================
-   FINALIZAR
-========================= */
-async function finishExam() {
-  const totalTimeSeconds = Math.round((Date.now() - examStartTime) / 1000);
+      examStartTime = Date.now();
+      showQuestion("q1");
+    }
 
-  const conceptualPercentage = getPercentage(conceptualScore, MAX_CONCEPTUAL_SCORE);
-  const speedPercentage = getPercentage(speedScore, MAX_SPEED_SCORE);
-  const strategyPercentage = getPercentage(strategyScore, MAX_STRATEGY_SCORE);
+    /* =========================
+       PREGUNTAS
+    ========================= */
+    function showQuestion(id) {
+      current = id;
+      questionStartTime = Date.now();
+      currentHintsUsed = { theory: false, formula: false };
 
-  const conceptualConclusion = getConceptualConclusion(conceptualScore);
-  const speedConclusion = getSpeedConclusion(speedScore);
-  const strategyConclusion = getStrategyConclusion(strategyScore);
+      const q = questions[id];
 
-  document.getElementById("content").innerHTML = `<p>Procesando resultados...</p>`;
+      document.getElementById("content").innerHTML = `
+        <div class="exam-layout">
+          <h3>${q.text}</h3>
 
-  const conceptualAI = await getAIDiagnosis("Comprensión conceptual", conceptualScore, 60, conceptualConclusion);
-  const speedAI = await getAIDiagnosis("Rapidez", speedScore, 60, speedConclusion);
-  const strategyAI = await getAIDiagnosis("Estrategia matemática", strategyScore, 30, strategyConclusion);
+          <div class="image-box">
+            <img class="question-image" src="${q.image}" alt="Pregunta">
+          </div>
 
-  const payloadToSave = {
-    guardianName: student.guardianName,
-    guardianPhone: student.guardianPhone,
-    studentName: student.name,
-    studentAge: student.age,
-    studentGrade: student.grade,
-    institutionType: student.institutionType,
-    totalTimeSeconds,
-    conceptualScore,
-    speedScore,
-    strategyScore,
-    conceptualPercentage,
-    speedPercentage,
-    strategyPercentage,
-    correctAnswers: totalCorrect,
-    hintsRequested: totalHintsRequested,
-    responses
-  };
+          <div class="row-buttons">
+            <button onclick="showHint('theory')">Dame una pista teórica</button>
+            <button onclick="showHint('formula')">Dame una pista fórmula</button>
+          </div>
 
-  await saveResults(payloadToSave);
+          <div id="hintTheoryContainer"></div>
+          <div id="hintFormulaContainer"></div>
 
-  document.getElementById("content").innerHTML = `
-    <div class="summary-box">
-      <p><strong>Nombre del alumno:</strong> ${student.name}</p>
-      <p><strong>Grado:</strong> ${student.grade}</p>
-      <p><strong>Preguntas acertadas:</strong> ${totalCorrect}</p>
-      <p><strong>Pistas pedidas:</strong> ${totalHintsRequested}</p>
-      <p><strong>Tiempo total:</strong> ${formatTime(totalTimeSeconds)}</p>
-    </div>
+          <input id="answer" placeholder="Escribe tu respuesta">
+          <button onclick="submitAnswer()">Responder</button>
+        </div>
+      `;
+    }
 
-    <div class="summary-box">
-      <p><strong>Puntaje en comprensión conceptual:</strong> ${conceptualPercentage}%</p>
-      <p>${conceptualAI}</p>
-    </div>
+    function showHint(type) {
+      const q = questions[current];
 
-    <div class="summary-box">
-      <p><strong>Puntaje en rapidez:</strong> ${speedPercentage}%</p>
-      <p>${speedAI}</p>
-    </div>
+      if (type === "theory" && !currentHintsUsed.theory) {
+        currentHintsUsed.theory = true;
+        totalHintsRequested++;
+        document.getElementById("hintTheoryContainer").innerHTML = `
+          <div class="hint-box">
+            <div class="image-box">
+              <img class="hint-image" src="${q.hintTheoryImage}" alt="Pista teórica">
+            </div>
+          </div>
+        `;
+      }
 
-    <div class="summary-box">
-      <p><strong>Puntaje en estrategia matemática:</strong> ${strategyPercentage}%</p>
-      <p>${strategyAI}</p>
-    </div>
+      if (type === "formula" && !currentHintsUsed.formula) {
+        currentHintsUsed.formula = true;
+        totalHintsRequested++;
+        document.getElementById("hintFormulaContainer").innerHTML = `
+          <div class="hint-box">
+            <div class="image-box">
+              <img class="hint-image" src="${q.hintFormulaImage}" alt="Pista fórmula">
+            </div>
+          </div>
+        `;
+      }
+    }
 
-    <a class="wa-btn" href="${WHATSAPP_LINK}" target="_blank">Contactar por WhatsApp a Matlab</a>
-  `;
-}
+    /* =========================
+       PUNTAJES
+    ========================= */
+    function countHintsUsed() {
+      let count = 0;
+      if (currentHintsUsed.theory) count++;
+      if (currentHintsUsed.formula) count++;
+      return count;
+    }
 
-function formatTime(totalSeconds) {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}m ${seconds}s`;
-}
+    function getConceptualPoints(isCorrect, hints) {
+      if (!isCorrect) return 0;
+      if (hints === 0) return 3;
+      if (hints === 1) return 2;
+      return 1;
+    }
 
-renderStart();
-</script>
+    function getSpeedPoints(isCorrect, timeSeconds) {
+      if (!isCorrect) return 0;
+      if (timeSeconds < 180) return 3;
+      if (timeSeconds <= 300) return 2;
+      return 1;
+    }
+
+    function getStrategyPoints(questionId, isCorrect, hints) {
+      const match = questionId.match(/^q(\d+)/);
+      if (!match) return 0;
+
+      const number = parseInt(match[1], 10);
+      const isEven = number % 2 === 0;
+
+      if (!isEven || !isCorrect) return 0;
+
+      if (hints === 0) return 3;
+      if (hints === 1) return 2;
+      return 1;
+    }
+
+    function getPercentage(score, maxScore) {
+      return Math.round((score / maxScore) * 100);
+    }
+
+    function getConceptualConclusion(score) {
+      if (score <= 15) return "Poca base teórica, necesita apoyo constante.";
+      if (score <= 30) return "Tiene nociones, pero debe practicar bastante.";
+      if (score <= 45) return "Nivel teórico promedio, puede mejorar.";
+      return "Buen nivel, puede aprender conocimientos nuevos.";
+    }
+
+    function getSpeedConclusion(score) {
+      if (score <= 15) return "Necesita mucha supervisión de ejercicios.";
+      if (score <= 30) return "Se demora bastante, pero puede resolver ejercicios.";
+      if (score <= 45) return "Nivel de tiempo promedio, puede mejorar con práctica.";
+      return "Buen nivel de resolución, puede probar ejercicios más adelantados.";
+    }
+
+    function getStrategyConclusion(score) {
+      if (score <= 7.5) return "Poco nivel de razonamiento, necesita apoyo.";
+      if (score <= 15) return "Tiene ciertas estrategias, pero debe practicar bastante.";
+      if (score <= 22.5) return "Nivel de razonamiento promedio, puede mejorar.";
+      return "Buen nivel, puede aprender conocimientos adelantados.";
+    }
+
+    /* =========================
+       ENVÍO DE RESPUESTA
+    ========================= */
+    function submitAnswer() {
+      const q = questions[current];
+      const answer = document.getElementById("answer").value.trim();
+      const timeSeconds = Math.round((Date.now() - questionStartTime) / 1000);
+      const normalizedAnswer = answer.replace(/\s+/g, "");
+      const normalizedCorrect = String(q.correct).replace(/\s+/g, "");
+      const isCorrect = normalizedAnswer === normalizedCorrect;
+      const hints = countHintsUsed();
+
+      if (isCorrect) totalCorrect++;
+
+      const conceptualPoints = getConceptualPoints(isCorrect, hints);
+      const speedPoints = getSpeedPoints(isCorrect, timeSeconds);
+      const strategyPoints = getStrategyPoints(current, isCorrect, hints);
+
+      conceptualScore += conceptualPoints;
+      speedScore += speedPoints;
+      strategyScore += strategyPoints;
+
+      responses.push({
+        questionId: current,
+        answer,
+        correct: isCorrect,
+        timeSeconds,
+        hintsUsed: hints,
+        conceptualPoints,
+        speedPoints,
+        strategyPoints
+      });
+
+      let next;
+      if (current === "q2_good" || current === "q2_bad" || current === "q4_good" || current === "q4_bad" || current === "q6_good" || current === "q6_bad" || current === "q8_good" || current === "q8_bad") {
+        next = q.next;
+      } else if (q.next && questions[q.next + "_good"]) {
+        next = isCorrect ? q.next + "_good" : q.next + "_bad";
+      } else {
+        next = q.next;
+      }
+
+      if (next) showQuestion(next);
+      else finishExam();
+    }
+
+    /* =========================
+       GUARDAR EN SHEETS
+    ========================= */
+    async function saveResults(payload) {
+      try {
+        if (!WEBHOOK_URL || WEBHOOK_URL === "PEGA_AQUI_TU_LINK_DE_APPS_SCRIPT") {
+          console.log("Webhook no configurado.");
+          return;
+        }
+
+        await fetch(WEBHOOK_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        console.log("Solicitud enviada al webhook.");
+      } catch (error) {
+        console.error("Error guardando resultados:", error);
+      }
+    }
+
+    /* =========================
+       FINALIZAR
+    ========================= */
+    async function finishExam() {
+      if (isSubmitting) return;
+      isSubmitting = true;
+
+      const totalTimeSeconds = Math.round((Date.now() - examStartTime) / 1000);
+
+      const conceptualPercentage = getPercentage(conceptualScore, MAX_CONCEPTUAL_SCORE);
+      const speedPercentage = getPercentage(speedScore, MAX_SPEED_SCORE);
+      const strategyPercentage = getPercentage(strategyScore, MAX_STRATEGY_SCORE);
+
+      const conceptualAI = getConceptualConclusion(conceptualScore);
+      const speedAI = getSpeedConclusion(speedScore);
+      const strategyAI = getStrategyConclusion(strategyScore);
+
+      const payloadToSave = {
+        guardianName: student.guardianName,
+        guardianPhone: student.guardianPhone,
+        studentName: student.name,
+        studentAge: student.age,
+        studentGrade: student.grade,
+        institutionType: student.institutionType,
+        totalTimeSeconds,
+        conceptualScore,
+        speedScore,
+        strategyScore,
+        conceptualPercentage,
+        speedPercentage,
+        strategyPercentage,
+        correctAnswers: totalCorrect,
+        hintsRequested: totalHintsRequested,
+        responses
+      };
+
+      document.getElementById("content").innerHTML = `
+        <div class="loading-text">Procesando resultados...</div>
+      `;
+
+      await saveResults(payloadToSave);
+
+      document.getElementById("content").innerHTML = `
+        <div class="results-layout">
+          <div class="summary-box">
+            <div class="summary-title">Resumen del examen</div>
+            <p><strong>Nombre del alumno:</strong> ${student.name}</p>
+            <p><strong>Grado:</strong> ${student.grade}</p>
+            <p><strong>Preguntas acertadas:</strong> ${totalCorrect}</p>
+            <p><strong>Pistas pedidas:</strong> ${totalHintsRequested}</p>
+            <p><strong>Tiempo total:</strong> ${formatTime(totalTimeSeconds)}</p>
+          </div>
+
+          <div class="summary-box">
+            <p><strong>Puntaje en comprensión conceptual:</strong> ${conceptualPercentage}%</p>
+            <p>${conceptualAI}</p>
+          </div>
+
+          <div class="summary-box">
+            <p><strong>Puntaje en rapidez:</strong> ${speedPercentage}%</p>
+            <p>${speedAI}</p>
+          </div>
+
+          <div class="summary-box">
+            <p><strong>Puntaje en estrategia matemática:</strong> ${strategyPercentage}%</p>
+            <p>${strategyAI}</p>
+          </div>
+
+          <a class="wa-btn" href="${WHATSAPP_LINK}" target="_blank">
+            Contactar por WhatsApp a Matlab
+          </a>
+        </div>
+      `;
+    }
+
+    function formatTime(totalSeconds) {
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${minutes}m ${seconds}s`;
+    }
+
+    renderStart();
+  </script>
 </body>
 </html>
