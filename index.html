@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Evaluación Matemática Inteligente</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.12);
+      padding: 28px;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 760px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 35px rgba(0,0,0,0.25);
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 10px;
+      border: none;
+      box-sizing: border-box;
+      font-size: 15px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .row-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .row-buttons button {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .question-image, .hint-image {
+      width: 100%;
+      max-height: 360px;
+      object-fit: contain;
+      border-radius: 12px;
+      margin-top: 14px;
+      background: rgba(255,255,255,0.08);
+    }
+
+    .summary-box {
+      background: rgba(255,255,255,0.08);
+      padding: 15px;
+      border-radius: 14px;
+      margin-top: 14px;
+    }
+
+    .wa-btn {
+      background: #25D366;
+      color: white;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 18px;
+      padding: 12px 18px;
+      border-radius: 10px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h2>Evaluación Matemática</h2>
+  <div id="content"></div>
+</div>
+
+<script>
+/* =========================
+   CONFIGURACIÓN
+========================= */
+const OPENAI_API_KEY = "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";
+const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyx0VGt-WbzWl3LRuO3gkZQzDU6CW3tOMP_cPPK6JG44NLkjuN3qvAZEyapTdiLeufyHg/exec";
+const WHATSAPP_LINK = "https://wa.me/51961760357?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20Matlab";
+
+const MAX_CONCEPTUAL_SCORE = 60;
+const MAX_SPEED_SCORE = 60;
+const MAX_STRATEGY_SCORE = 30;
+
+/* =========================
+   ESTADO GLOBAL
+========================= */
+let student = {};
+let responses = [];
+let totalCorrect = 0;
+let totalHintsRequested = 0;
+
+let conceptualScore = 0;
+let speedScore = 0;
+let strategyScore = 0;
+
+let examStartTime = null;
+let questionStartTime = null;
+let current = "q1";
+
+let currentHintsUsed = {
+  theory: false,
+  formula: false
+};
+
+/* =========================
+   PREGUNTAS
+   Reemplaza imágenes y respuestas
+========================= */
+const questions = {
+  q1: {
+    text: "Pregunta 1",
+    image: "https://i.imgur.com/REEMPLAZA1.png",
+    correct: "4",
+    next: "q2",
+    hintTheoryImage: "https://i.imgur.com/PISTA_TEORICA1.png",
+    hintFormulaImage: "https://i.imgur.com/PISTA_FORMULA1.png"
+  },
+  q2_good: {
+    text: "Pregunta 2",
+    image: "https://i.imgur.com/REEMPLAZA2A.png",
+    correct: "12",
+    next: "q3",
+    hintTheoryImage: "https://i.imgur.com/PISTA_TEORICA2A.png",
+    hintFormulaImage: "https://i.imgur.com/PISTA_FORMULA2A.png"
+  },
+  q2_bad: {
+    text: "Pregunta 2",
+    image: "https://i.imgur.com/REEMPLAZA2B.png",
+    correct: "4",
+    next: "q3",
+    hintTheoryImage: "https://i.imgur.com/PISTA_TEORICA2B.png",
+    hintFormulaImage: "https://i.imgur.com/PISTA_FORMULA2B.png"
+  },
+  q3: {
+    text: "Pregunta 3",
+    image: "https://i.imgur.com/REEMPLAZA3.png",
+    correct: "36",
+    next: "q4",
+    hintTheoryImage: "https://i.imgur.com/PISTA_TEORICA3.png",
+    hintFormulaImage: "https://i.imgur.com/PISTA_FORMULA3.png"
+  },
+  q4_good: {
+    text: "Pregunta 4",
+    image: "https://i.imgur.com/REEMPLAZA4A.png",
+    correct: "96",
+    next: "q5",
+    hintTheoryImage: "https://i.imgur.com/PISTA_TEORICA4A.png",
+    hintFormulaImage: "https://i.imgur.com/PISTA_FORMULA4A.png"
+  },
+  q4_bad: {
+    text: "Pregunta 4",
+    image: "https://i.imgur.com/REEMPLAZA4B.png",
+    correct: "20",
+    next: "q5",
+    hintTheoryImage: "https://i.imgur.com/PISTA_TEORICA4B.png",
+    hintFormulaImage: "https://i.imgur.com/PISTA_FORMULA4B.png"
+  },
+  q5: {
+    text: "Pregunta 5",
+    image: "https://i.imgur.com/REEMPLAZA5.png",
+    correct: "81",
+    next: "q6",
+    hintTheoryImage: "https://i.imgur.com/PISTA_TEORICA5.png",
+    hintFormulaImage: "https://i.imgur.com/PISTA_FORMULA5.png"
+  },
+  q6_good: {
+    text: "Pregunta 6",
+    image: "https://i.imgur.com/REEMPLAZA6A.png",
+    correct: "60",
+    next: "q7",
+    hintTheoryImage: "https://i.imgur.com/PISTA_TEORICA6A.png",
+    hintFormulaImage: "https://i.imgur.com/PISTA_FORMULA6A.png"
+  },
+  q6_bad: {
+    text: "Pregunta 6",
+    image: "https://i.imgur.com/REEMPLAZA6B.png",
+    correct: "12",
+    next: "q7",
+    hintTheoryImage: "https://i.imgur.com/PISTA_TEORICA6B.png",
+    hintFormulaImage: "https://i.imgur.com/PISTA_FORMULA6B.png"
+  },
+  q7: {
+    text: "Pregunta 7",
+    image: "https://i.imgur.com/REEMPLAZA7.png",
+    correct: "50",
+    next: "q8",
+    hintTheoryImage: "https://i.imgur.com/PISTA_TEORICA7.png",
+    hintFormulaImage: "https://i.imgur.com/PISTA_FORMULA7.png"
+  },
+  q8_good: {
+    text: "Pregunta 8",
+    image: "https://i.imgur.com/REEMPLAZA8A.png",
+    correct: "20",
+    next: "q9",
+    hintTheoryImage: "https://i.imgur.com/PISTA_TEORICA8A.png",
+    hintFormulaImage: "https://i.imgur.com/PISTA_FORMULA8A.png"
+  },
+  q8_bad: {
+    text: "Pregunta 8",
+    image: "https://i.imgur.com/REEMPLAZA8B.png",
+    correct: "5",
+    next: "q9",
+    hintTheoryImage: "https://i.imgur.com/PISTA_TEORICA8B.png",
+    hintFormulaImage: "https://i.imgur.com/PISTA_FORMULA8B.png"
+  },
+  q9: {
+    text: "Pregunta 9",
+    image: "https://i.imgur.com/REEMPLAZA9.png",
+    correct: "56",
+    next: "q10",
+    hintTheoryImage: "https://i.imgur.com/PISTA_TEORICA9.png",
+    hintFormulaImage: "https://i.imgur.com/PISTA_FORMULA9.png"
+  },
+  q10: {
+    text: "Pregunta 10",
+    image: "https://i.imgur.com/REEMPLAZA10.png",
+    correct: "12",
+    next: null,
+    hintTheoryImage: "https://i.imgur.com/PISTA_TEORICA10.png",
+    hintFormulaImage: "https://i.imgur.com/PISTA_FORMULA10.png"
+  }
+};
+
+/* =========================
+   RENDER INICIAL
+========================= */
+function renderStart() {
+  document.getElementById("content").innerHTML = `
+    <input id="guardianName" placeholder="Nombre del padre, madre o apoderado">
+    <input id="guardianPhone" placeholder="Teléfono del padre, madre o apoderado">
+    <input id="studentName" placeholder="Nombre del alumno">
+    <input id="studentAge" placeholder="Edad del alumno" type="number">
+    <input id="studentGrade" placeholder="Grado del alumno">
+    <select id="institutionType">
+      <option value="">Institución del alumno</option>
+      <option value="Pública">Pública</option>
+      <option value="Privada">Privada</option>
+    </select>
+    <button onclick="startExam()">Comenzar</button>
+  `;
+}
+
+function startExam() {
+  student.guardianName = document.getElementById("guardianName").value.trim();
+  student.guardianPhone = document.getElementById("guardianPhone").value.trim();
+  student.name = document.getElementById("studentName").value.trim();
+  student.age = document.getElementById("studentAge").value.trim();
+  student.grade = document.getElementById("studentGrade").value.trim();
+  student.institutionType = document.getElementById("institutionType").value;
+
+  if (
+    !student.guardianName ||
+    !student.guardianPhone ||
+    !student.name ||
+    !student.age ||
+    !student.grade ||
+    !student.institutionType
+  ) {
+    alert("Completa todos los campos.");
+    return;
+  }
+
+  examStartTime = Date.now();
+  showQuestion("q1");
+}
+
+/* =========================
+   PREGUNTAS
+========================= */
+function showQuestion(id) {
+  current = id;
+  questionStartTime = Date.now();
+  currentHintsUsed = { theory: false, formula: false };
+
+  const q = questions[id];
+
+  document.getElementById("content").innerHTML = `
+    <h3>${q.text}</h3>
+    <img class="question-image" src="${q.image}" alt="Pregunta">
+
+    <div class="row-buttons">
+      <button onclick="showHint('theory')">Dame una pista teórica</button>
+      <button onclick="showHint('formula')">Dame una pista fórmula</button>
+    </div>
+
+    <div id="hintTheoryContainer"></div>
+    <div id="hintFormulaContainer"></div>
+
+    <input id="answer" placeholder="Escribe tu respuesta">
+    <button onclick="submitAnswer()">Responder</button>
+  `;
+}
+
+function showHint(type) {
+  const q = questions[current];
+
+  if (type === "theory" && !currentHintsUsed.theory) {
+    currentHintsUsed.theory = true;
+    totalHintsRequested++;
+    document.getElementById("hintTheoryContainer").innerHTML = `
+      <img class="hint-image" src="${q.hintTheoryImage}" alt="Pista teórica">
+    `;
+  }
+
+  if (type === "formula" && !currentHintsUsed.formula) {
+    currentHintsUsed.formula = true;
+    totalHintsRequested++;
+    document.getElementById("hintFormulaContainer").innerHTML = `
+      <img class="hint-image" src="${q.hintFormulaImage}" alt="Pista fórmula">
+    `;
+  }
+}
+
+/* =========================
+   PUNTAJES
+========================= */
+function countHintsUsed() {
+  let count = 0;
+  if (currentHintsUsed.theory) count++;
+  if (currentHintsUsed.formula) count++;
+  return count;
+}
+
+function getConceptualPoints(isCorrect, hints) {
+  if (!isCorrect) return 0;
+  if (hints === 0) return 3;
+  if (hints === 1) return 2;
+  return 1;
+}
+
+function getSpeedPoints(isCorrect, timeSeconds) {
+  if (!isCorrect) return 0;
+  if (timeSeconds < 180) return 3;
+  if (timeSeconds <= 300) return 2;
+  return 1;
+}
+
+function getStrategyPoints(questionId, isCorrect, hints) {
+  const match = questionId.match(/^q(\d+)/);
+  if (!match) return 0;
+
+  const number = parseInt(match[1], 10);
+  const isEven = number % 2 === 0;
+
+  if (!isEven || !isCorrect) return 0;
+
+  if (hints === 0) return 3;
+  if (hints === 1) return 2;
+  return 1;
+}
+
+function getPercentage(score, maxScore) {
+  return Math.round((score / maxScore) * 100);
+}
+
+function getConceptualConclusion(score) {
+  if (score <= 15) return "Poca base teórica, necesita apoyo constante.";
+  if (score <= 30) return "Tiene nociones, pero debe practicar bastante.";
+  if (score <= 45) return "Nivel teórico promedio, puede mejorar.";
+  return "Buen nivel, puede aprender conocimientos nuevos.";
+}
+
+function getSpeedConclusion(score) {
+  if (score <= 15) return "Necesita mucha supervisión de ejercicios.";
+  if (score <= 30) return "Se demora bastante, pero puede resolver ejercicios.";
+  if (score <= 45) return "Nivel de tiempo promedio, puede mejorar con práctica.";
+  return "Buen nivel de resolución, puede probar ejercicios más adelantados.";
+}
+
+function getStrategyConclusion(score) {
+  if (score <= 7.5) return "Poco nivel de razonamiento, necesita apoyo.";
+  if (score <= 15) return "Tiene ciertas estrategias, pero debe practicar bastante.";
+  if (score <= 22.5) return "Nivel de razonamiento promedio, puede mejorar.";
+  return "Buen nivel, puede aprender conocimientos adelantados.";
+}
+
+/* =========================
+   ENVÍO DE RESPUESTA
+========================= */
+function submitAnswer() {
+  const q = questions[current];
+  const answer = document.getElementById("answer").value.trim();
+  const timeSeconds = Math.round((Date.now() - questionStartTime) / 1000);
+  const isCorrect = answer == q.correct;
+  const hints = countHintsUsed();
+
+  if (isCorrect) totalCorrect++;
+
+  const conceptualPoints = getConceptualPoints(isCorrect, hints);
+  const speedPoints = getSpeedPoints(isCorrect, timeSeconds);
+  const strategyPoints = getStrategyPoints(current, isCorrect, hints);
+
+  conceptualScore += conceptualPoints;
+  speedScore += speedPoints;
+  strategyScore += strategyPoints;
+
+  responses.push({
+    questionId: current,
+    answer,
+    correct: isCorrect,
+    timeSeconds,
+    hintsUsed: hints,
+    conceptualPoints,
+    speedPoints,
+    strategyPoints
+  });
+
+  let next;
+  if (current.includes("q2") || current.includes("q4") || current.includes("q6") || current.includes("q8")) {
+    next = q.next;
+  } else if (q.next && questions[q.next + "_good"]) {
+    next = isCorrect ? q.next + "_good" : q.next + "_bad";
+  } else {
+    next = q.next;
+  }
+
+  if (next) showQuestion(next);
+  else finishExam();
+}
+
+/* =========================
+   IA
+========================= */
+async function getAIDiagnosis(indicator, score, maxScore, conclusion) {
+  try {
+    const percentage = getPercentage(score, maxScore);
+
+    const prompt = `
+Eres un profesor de matemáticas.
+Redacta un comentario breve, cálido y profesional para padres.
+Indicador: ${indicator}
+Puntaje: ${score}/${maxScore}
+Porcentaje: ${percentage}%
+Conclusión base: ${conclusion}
+
+Redacta máximo 3 líneas.
+`;
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + OPENAI_API_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+
+    const data = await response.json();
+    return data?.choices?.[0]?.message?.content || conclusion;
+  } catch (error) {
+    return conclusion;
+  }
+}
+
+/* =========================
+   GUARDAR EN SHEETS
+========================= */
+async function saveResults(payload) {
+  try {
+    if (!WEBHOOK_URL || WEBHOOK_URL === "PEGA_AQUI_TU_LINK_DE_APPS_SCRIPT") {
+      console.log("Webhook no configurado.");
+      return;
+    }
+
+    const response = await fetch(WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.text();
+    console.log("Respuesta Sheets:", result);
+  } catch (error) {
+    console.error("Error guardando resultados:", error);
+  }
+}
+
+/* =========================
+   FINALIZAR
+========================= */
+async function finishExam() {
+  const totalTimeSeconds = Math.round((Date.now() - examStartTime) / 1000);
+
+  const conceptualPercentage = getPercentage(conceptualScore, MAX_CONCEPTUAL_SCORE);
+  const speedPercentage = getPercentage(speedScore, MAX_SPEED_SCORE);
+  const strategyPercentage = getPercentage(strategyScore, MAX_STRATEGY_SCORE);
+
+  const conceptualConclusion = getConceptualConclusion(conceptualScore);
+  const speedConclusion = getSpeedConclusion(speedScore);
+  const strategyConclusion = getStrategyConclusion(strategyScore);
+
+  document.getElementById("content").innerHTML = `<p>Procesando resultados...</p>`;
+
+  const conceptualAI = await getAIDiagnosis("Comprensión conceptual", conceptualScore, 60, conceptualConclusion);
+  const speedAI = await getAIDiagnosis("Rapidez", speedScore, 60, speedConclusion);
+  const strategyAI = await getAIDiagnosis("Estrategia matemática", strategyScore, 30, strategyConclusion);
+
+  const payloadToSave = {
+    guardianName: student.guardianName,
+    guardianPhone: student.guardianPhone,
+    studentName: student.name,
+    studentAge: student.age,
+    studentGrade: student.grade,
+    institutionType: student.institutionType,
+    totalTimeSeconds,
+    conceptualScore,
+    speedScore,
+    strategyScore,
+    conceptualPercentage,
+    speedPercentage,
+    strategyPercentage,
+    correctAnswers: totalCorrect,
+    hintsRequested: totalHintsRequested,
+    responses
+  };
+
+  await saveResults(payloadToSave);
+
+  document.getElementById("content").innerHTML = `
+    <div class="summary-box">
+      <p><strong>Nombre del alumno:</strong> ${student.name}</p>
+      <p><strong>Grado:</strong> ${student.grade}</p>
+      <p><strong>Preguntas acertadas:</strong> ${totalCorrect}</p>
+      <p><strong>Pistas pedidas:</strong> ${totalHintsRequested}</p>
+      <p><strong>Tiempo total:</strong> ${formatTime(totalTimeSeconds)}</p>
+    </div>
+
+    <div class="summary-box">
+      <p><strong>Puntaje en comprensión conceptual:</strong> ${conceptualPercentage}%</p>
+      <p>${conceptualAI}</p>
+    </div>
+
+    <div class="summary-box">
+      <p><strong>Puntaje en rapidez:</strong> ${speedPercentage}%</p>
+      <p>${speedAI}</p>
+    </div>
+
+    <div class="summary-box">
+      <p><strong>Puntaje en estrategia matemática:</strong> ${strategyPercentage}%</p>
+      <p>${strategyAI}</p>
+    </div>
+
+    <a class="wa-btn" href="${WHATSAPP_LINK}" target="_blank">Contactar por WhatsApp a Matlab</a>
+  `;
+}
+
+function formatTime(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}m ${seconds}s`;
+}
+
+renderStart();
+</script>
+</body>
+</html>
