@@ -32,6 +32,7 @@
       min-height: 100vh;
       margin: 0;
       padding: 24px;
+      overflow-x: hidden;
       background-color: #eef3ff;
       background-image:
         linear-gradient(rgba(108,140,255,0.10) 1px, transparent 1px),
@@ -50,6 +51,7 @@
       box-shadow: var(--shadow);
       border: 1px solid var(--card-border);
       position: relative;
+      overflow: visible;
     }
 
     h2 {
@@ -253,7 +255,7 @@
       text-align: center;
     }
 
-    .character-box {
+    .main-character-box {
       position: fixed;
       right: 24px;
       bottom: 18px;
@@ -262,16 +264,39 @@
       pointer-events: none;
     }
 
-    .character-img {
+    .main-character-img {
       width: 100%;
       display: block;
       filter: drop-shadow(0 10px 18px rgba(0,0,0,0.18));
     }
 
-    .speech-bubble {
+    .hint-character-box {
+      position: fixed;
+      left: 28px;
+      bottom: 18px;
+      width: 150px;
+      z-index: 1000;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .hint-character-box.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .hint-character-img {
+      width: 100%;
+      display: block;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,0.18));
+    }
+
+    .hint-speech-bubble {
       position: absolute;
-      bottom: 125px;
-      right: 20px;
+      left: 118px;
+      bottom: 108px;
       width: 220px;
       background: white;
       color: #30435d;
@@ -280,23 +305,16 @@
       box-shadow: 0 12px 24px rgba(0,0,0,0.14);
       font-size: 14px;
       line-height: 1.4;
-      opacity: 0;
-      transform: translateY(10px) scale(0.96);
-      transition: opacity 0.22s ease, transform 0.22s ease;
+      word-wrap: break-word;
     }
 
-    .speech-bubble.show {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-
-    .speech-bubble::after {
+    .hint-speech-bubble::after {
       content: "";
       position: absolute;
-      bottom: -10px;
-      right: 34px;
-      width: 18px;
-      height: 18px;
+      left: -8px;
+      bottom: 20px;
+      width: 16px;
+      height: 16px;
       background: white;
       transform: rotate(45deg);
     }
@@ -361,16 +379,22 @@
     }
 
     @media (max-width: 900px) {
-      .character-box {
+      .main-character-box {
         width: 130px;
         right: 10px;
         bottom: 10px;
       }
 
-      .speech-bubble {
-        width: 180px;
-        right: 6px;
-        bottom: 98px;
+      .hint-character-box {
+        width: 120px;
+        left: 10px;
+        bottom: 10px;
+      }
+
+      .hint-speech-bubble {
+        width: 170px;
+        left: 92px;
+        bottom: 86px;
         font-size: 13px;
       }
     }
@@ -398,13 +422,22 @@
         max-height: 180px;
       }
 
-      .character-box {
+      .main-character-box {
         width: 112px;
       }
 
-      .speech-bubble {
-        width: 160px;
-        bottom: 82px;
+      .hint-character-box {
+        width: 102px;
+        left: 8px;
+        bottom: 8px;
+      }
+
+      .hint-speech-bubble {
+        width: 150px;
+        left: 78px;
+        bottom: 72px;
+        font-size: 12px;
+        padding: 10px 12px;
       }
     }
   </style>
@@ -415,9 +448,13 @@
     <div id="content"></div>
   </div>
 
-  <div class="character-box">
-    <div id="speechBubble" class="speech-bubble"></div>
-    <img id="characterImage" class="character-img" src="img/personaje-neutro.png" alt="Asistente">
+  <div class="main-character-box">
+    <img id="mainCharacterImage" class="main-character-img" src="img/personaje-neutro.png" alt="Asistente principal">
+  </div>
+
+  <div id="hintCharacterBox" class="hint-character-box">
+    <div id="hintSpeechBubble" class="hint-speech-bubble"></div>
+    <img id="hintCharacterImage" class="hint-character-img" src="img/personaje-pista.png" alt="Asistente de pistas">
   </div>
 
   <script>
@@ -450,14 +487,16 @@
     let selectedQuestionCount = 10;
     let answeredCount = 0;
     let globalTimerInterval = null;
-    let bubbleTimeout = null;
+    let mainCharacterTimeout = null;
+    let hintCharacterTimeout = null;
 
-    const CHARACTER_IMAGES = {
+    const MAIN_CHARACTER_IMAGES = {
       normal: "img/personaje-neutro.png",
-      hint: "img/personaje-pista.png",
       happy: "img/personaje-feliz.png",
       sad: "img/personaje-triste.png"
     };
+
+    const HINT_CHARACTER_IMAGE = "img/personaje-pista.png";
 
     const hintTheoryMessages = [
       "Te brindo una ayudita.",
@@ -471,20 +510,6 @@
       "Recuerda la regla y verás que sale.",
       "Una formulita puede ayudarte mucho aquí.",
       "Respira, revisemos la idea clave."
-    ];
-
-    const correctMessages = [
-      "¡Excelente!",
-      "¡Muy bien!",
-      "¡Lo hiciste genial!",
-      "¡Sigue así!"
-    ];
-
-    const wrongMessages = [
-      "Lo intentaremos mejor a la próxima.",
-      "No pasa nada, seguimos.",
-      "Casi, inténtalo otra vez en la siguiente.",
-      "Equivocarse también es aprender."
     ];
 
     const questions = {
@@ -622,35 +647,41 @@
       return (answeredCount / selectedQuestionCount) * 100;
     }
 
-    function setCharacter(state = "normal", message = "", autoHide = true) {
-      const img = document.getElementById("characterImage");
-      const bubble = document.getElementById("speechBubble");
+    function setMainCharacter(state = "normal", autoReturn = true) {
+      const img = document.getElementById("mainCharacterImage");
+      if (!img) return;
 
-      if (img && CHARACTER_IMAGES[state]) {
-        img.src = CHARACTER_IMAGES[state];
+      if (mainCharacterTimeout) {
+        clearTimeout(mainCharacterTimeout);
       }
 
-      if (!bubble) return;
+      img.src = MAIN_CHARACTER_IMAGES[state] || MAIN_CHARACTER_IMAGES.normal;
 
-      if (bubbleTimeout) {
-        clearTimeout(bubbleTimeout);
+      if (autoReturn && state !== "normal") {
+        mainCharacterTimeout = setTimeout(() => {
+          img.src = MAIN_CHARACTER_IMAGES.normal;
+        }, 1800);
+      }
+    }
+
+    function showHintCharacter(message) {
+      const box = document.getElementById("hintCharacterBox");
+      const bubble = document.getElementById("hintSpeechBubble");
+      const img = document.getElementById("hintCharacterImage");
+
+      if (!box || !bubble || !img) return;
+
+      if (hintCharacterTimeout) {
+        clearTimeout(hintCharacterTimeout);
       }
 
-      if (message) {
-        bubble.textContent = message;
-        bubble.classList.add("show");
-      } else {
-        bubble.classList.remove("show");
-      }
+      img.src = HINT_CHARACTER_IMAGE;
+      bubble.textContent = message;
+      box.classList.add("show");
 
-      if (autoHide && message) {
-        bubbleTimeout = setTimeout(() => {
-          bubble.classList.remove("show");
-          if (img) {
-            img.src = CHARACTER_IMAGES.normal;
-          }
-        }, 2200);
-      }
+      hintCharacterTimeout = setTimeout(() => {
+        box.classList.remove("show");
+      }, 2400);
     }
 
     function startGlobalTimer() {
@@ -735,7 +766,7 @@
         </div>
       `;
 
-      setCharacter("normal", "¡Hola! Estoy aquí para acompañarte.", true);
+      setMainCharacter("normal", false);
     }
 
     function startExam() {
@@ -770,7 +801,7 @@
 
       examStartTime = Date.now();
       startGlobalTimer();
-      setCharacter("normal", "¡Empecemos! Tú puedes.", true);
+      setMainCharacter("normal", false);
       showQuestion("q1");
     }
 
@@ -830,7 +861,7 @@
           btn.style.opacity = "0.65";
         }
 
-        setCharacter("hint", randomFrom(hintTheoryMessages), true);
+        showHintCharacter(randomFrom(hintTheoryMessages));
       }
 
       if (type === "formula" && !currentHintsUsed.formula) {
@@ -851,7 +882,7 @@
           btn.style.opacity = "0.65";
         }
 
-        setCharacter("hint", randomFrom(hintFormulaMessages), true);
+        showHintCharacter(randomFrom(hintFormulaMessages));
       }
     }
 
@@ -920,7 +951,7 @@
       const answer = document.getElementById("answer").value.trim();
 
       if (!answer) {
-        setCharacter("hint", "Escribe una respuesta antes de continuar.", true);
+        alert("Escribe una respuesta antes de continuar.");
         return;
       }
 
@@ -954,9 +985,9 @@
       answeredCount++;
 
       if (isCorrect) {
-        setCharacter("happy", randomFrom(correctMessages), true);
+        setMainCharacter("happy", true);
       } else {
-        setCharacter("sad", randomFrom(wrongMessages), true);
+        setMainCharacter("sad", true);
       }
 
       let next;
@@ -1050,7 +1081,7 @@
 
       await saveResults(payloadToSave);
 
-      setCharacter("happy", "¡Terminaste! Buen trabajo.", false);
+      setMainCharacter("happy", false);
 
       document.getElementById("content").innerHTML = `
         <div class="results-layout">
