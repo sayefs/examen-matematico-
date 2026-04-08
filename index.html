@@ -461,7 +461,6 @@
     const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyx0VGt-WbzWl3LRuO3gkZQzDU6CW3tOMP_cPPK6JG44NLkjuN3qvAZEyapTdiLeufyHg/exec";
     const WHATSAPP_LINK = "https://wa.me/51961760357?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20Matlab";
 
-
     let student = {};
     let responses = [];
     let totalCorrect = 0;
@@ -905,28 +904,33 @@
     }
 
     function getPercentage(score, maxScore) {
+      if (!maxScore || maxScore <= 0) return 0;
       return Math.round((score / maxScore) * 100);
     }
 
-    function getConceptualConclusion(score) {
-      if (score <= 15) return "Poca base teórica, necesita apoyo constante.";
-      if (score <= 30) return "Tiene nociones, pero debe practicar bastante.";
-      if (score <= 45) return "Nivel teórico promedio, puede mejorar.";
-      return "Buen nivel, puede aprender conocimientos nuevos.";
-    }
+    function getConclusionByPercentage(percentage, type) {
+      if (type === "conceptual") {
+        if (percentage < 40) return "Poca base teórica, necesita apoyo constante.";
+        if (percentage < 70) return "Tiene nociones, pero debe practicar bastante.";
+        if (percentage < 90) return "Nivel teórico bueno, puede seguir fortaleciendo.";
+        return "Muy buen nivel de comprensión conceptual.";
+      }
 
-    function getSpeedConclusion(score) {
-      if (score <= 15) return "Necesita mucha supervisión de ejercicios.";
-      if (score <= 30) return "Se demora bastante, pero puede resolver ejercicios.";
-      if (score <= 45) return "Nivel de tiempo promedio, puede mejorar con práctica.";
-      return "Buen nivel de resolución, puede probar ejercicios más adelantados.";
-    }
+      if (type === "speed") {
+        if (percentage < 40) return "Necesita mejorar bastante su rapidez de resolución.";
+        if (percentage < 70) return "Tiene un ritmo intermedio, pero puede agilizarse.";
+        if (percentage < 90) return "Buen ritmo de resolución.";
+        return "Muy buen nivel de rapidez.";
+      }
 
-    function getStrategyConclusion(score) {
-      if (score <= 7.5) return "Poco nivel de razonamiento, necesita apoyo.";
-      if (score <= 15) return "Tiene ciertas estrategias, pero debe practicar bastante.";
-      if (score <= 22.5) return "Nivel de razonamiento promedio, puede mejorar.";
-      return "Buen nivel, puede aprender conocimientos adelantados.";
+      if (type === "strategy") {
+        if (percentage < 40) return "Necesita reforzar su estrategia matemática.";
+        if (percentage < 70) return "Tiene algunas estrategias, pero puede mejorar.";
+        if (percentage < 90) return "Buen manejo de estrategias matemáticas.";
+        return "Muy buen nivel de estrategia matemática.";
+      }
+
+      return "";
     }
 
     function submitAnswer() {
@@ -1065,24 +1069,18 @@
 
       const totalTimeSeconds = Math.round((Date.now() - examStartTime) / 1000);
 
-     // máximos dinámicos según preguntas respondidas
       const maxConceptualScore = answeredCount * 3;
       const maxSpeedScore = answeredCount * 3;
-
-// estrategia solo aplica a preguntas pares
       const maxStrategyQuestions = Math.floor(answeredCount / 2);
       const maxStrategyScore = maxStrategyQuestions * 3;
 
-// cálculo de porcentajes
       const conceptualPercentage = getPercentage(conceptualScore, maxConceptualScore);
       const speedPercentage = getPercentage(speedScore, maxSpeedScore);
-      const strategyPercentage = maxStrategyScore > 0
-        ? getPercentage(strategyScore, maxStrategyScore)
-        : 0;
+      const strategyPercentage = getPercentage(strategyScore, maxStrategyScore);
 
-      const conceptualAI = getConceptualConclusion(conceptualScore);
-      const speedAI = getSpeedConclusion(speedScore);
-      const strategyAI = getStrategyConclusion(strategyScore);
+      const conceptualAI = getConclusionByPercentage(conceptualPercentage, "conceptual");
+      const speedAI = getConclusionByPercentage(speedPercentage, "speed");
+      const strategyAI = getConclusionByPercentage(strategyPercentage, "strategy");
 
       const payloadToSave = {
         guardianName: student.guardianName,
@@ -1096,6 +1094,9 @@
         conceptualScore,
         speedScore,
         strategyScore,
+        maxConceptualScore,
+        maxSpeedScore,
+        maxStrategyScore,
         conceptualPercentage,
         speedPercentage,
         strategyPercentage,
