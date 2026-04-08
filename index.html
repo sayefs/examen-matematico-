@@ -461,9 +461,6 @@
     const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyx0VGt-WbzWl3LRuO3gkZQzDU6CW3tOMP_cPPK6JG44NLkjuN3qvAZEyapTdiLeufyHg/exec";
     const WHATSAPP_LINK = "https://wa.me/51961760357?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20Matlab";
 
-    const MAX_CONCEPTUAL_SCORE = 60;
-    const MAX_SPEED_SCORE = 60;
-    const MAX_STRATEGY_SCORE = 30;
 
     let student = {};
     let responses = [];
@@ -524,7 +521,7 @@
       q2_good: {
         text: "Pregunta 2",
         image: "https://i.imgur.com/NkQApOk.png",
-        correct: "20",
+        correct: "0",
         next: "q3",
         hintTheoryImage: "https://i.imgur.com/YvThtjC.png",
         hintFormulaImage: "https://i.imgur.com/snanV35.png"
@@ -1068,9 +1065,20 @@
 
       const totalTimeSeconds = Math.round((Date.now() - examStartTime) / 1000);
 
-      const conceptualPercentage = getPercentage(conceptualScore, MAX_CONCEPTUAL_SCORE);
-      const speedPercentage = getPercentage(speedScore, MAX_SPEED_SCORE);
-      const strategyPercentage = getPercentage(strategyScore, MAX_STRATEGY_SCORE);
+     // máximos dinámicos según preguntas respondidas
+      const maxConceptualScore = answeredCount * 3;
+      const maxSpeedScore = answeredCount * 3;
+
+// estrategia solo aplica a preguntas pares
+      const maxStrategyQuestions = Math.floor(answeredCount / 2);
+      const maxStrategyScore = maxStrategyQuestions * 3;
+
+// cálculo de porcentajes
+      const conceptualPercentage = getPercentage(conceptualScore, maxConceptualScore);
+      const speedPercentage = getPercentage(speedScore, maxSpeedScore);
+      const strategyPercentage = maxStrategyScore > 0
+        ? getPercentage(strategyScore, maxStrategyScore)
+        : 0;
 
       const conceptualAI = getConceptualConclusion(conceptualScore);
       const speedAI = getSpeedConclusion(speedScore);
