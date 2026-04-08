@@ -741,20 +741,11 @@
       document.getElementById("content").innerHTML = `
         <div class="exam-layout start-box">
           <p class="subtitle">
-            Completa los datos para comenzar. Luego podrás elegir si deseas resolver 6, 8 o 10 preguntas.
+            Completa los datos del alumno para comenzar. Luego podrás elegir si deseas resolver 6, 8 o 10 preguntas.
           </p>
 
-          <input id="guardianName" placeholder="Nombre del padre, madre o apoderado">
-          <input id="guardianPhone" placeholder="Teléfono del padre, madre o apoderado">
           <input id="studentName" placeholder="Nombre del alumno">
           <input id="studentAge" placeholder="Edad del alumno" type="number">
-          <input id="studentGrade" placeholder="Grado del alumno">
-
-          <select id="institutionType">
-            <option value="">Institución del alumno</option>
-            <option value="Pública">Pública</option>
-            <option value="Privada">Privada</option>
-          </select>
 
           <select id="questionCount">
             <option value="10">Resolver 10 preguntas</option>
@@ -770,23 +761,18 @@
     }
 
     function startExam() {
-      student.guardianName = document.getElementById("guardianName").value.trim();
-      student.guardianPhone = document.getElementById("guardianPhone").value.trim();
+      student = {};
       student.name = document.getElementById("studentName").value.trim();
       student.age = document.getElementById("studentAge").value.trim();
-      student.grade = document.getElementById("studentGrade").value.trim();
-      student.institutionType = document.getElementById("institutionType").value;
+      student.grade = "";
+      student.guardianName = "";
+      student.guardianPhone = "";
+      student.institutionType = "";
+
       selectedQuestionCount = parseInt(document.getElementById("questionCount").value, 10) || 10;
 
-      if (
-        !student.guardianName ||
-        !student.guardianPhone ||
-        !student.name ||
-        !student.age ||
-        !student.grade ||
-        !student.institutionType
-      ) {
-        alert("Completa todos los campos.");
+      if (!student.name || !student.age) {
+        alert("Completa los datos del alumno.");
         return;
       }
 
@@ -1009,10 +995,44 @@
       }
 
       if (answeredCount >= selectedQuestionCount || !next) {
-        setTimeout(() => finishExam(), 700);
+        setTimeout(() => renderParentForm(), 700);
       } else {
         setTimeout(() => transitionToQuestion(next), 700);
       }
+    }
+
+    function renderParentForm() {
+      document.getElementById("content").innerHTML = `
+        <div class="exam-layout start-box">
+          <h3>Antes de ver los resultados</h3>
+          <p class="subtitle">Completa estos datos para continuar</p>
+
+          <input id="guardianName" placeholder="Nombre del padre, madre o apoderado">
+          <input id="guardianPhone" placeholder="Teléfono del padre, madre o apoderado">
+
+          <select id="institutionType">
+            <option value="">Institución del alumno</option>
+            <option value="Pública">Pública</option>
+            <option value="Privada">Privada</option>
+          </select>
+
+          <button class="primary-btn" onclick="saveParentAndFinish()">Ver resultados</button>
+        </div>
+      `;
+    }
+
+    function saveParentAndFinish() {
+      student.guardianName = document.getElementById("guardianName").value.trim();
+      student.guardianPhone = document.getElementById("guardianPhone").value.trim();
+      student.institutionType = document.getElementById("institutionType").value;
+      student.grade = "";
+
+      if (!student.guardianName || !student.guardianPhone || !student.institutionType) {
+        alert("Completa todos los datos.");
+        return;
+      }
+
+      finishExam();
     }
 
     async function saveResults(payload) {
@@ -1061,8 +1081,9 @@
         guardianPhone: student.guardianPhone,
         studentName: student.name,
         studentAge: student.age,
-        studentGrade: student.grade,
+        studentGrade: student.grade || "",
         institutionType: student.institutionType,
+        selectedQuestionCount,
         totalTimeSeconds,
         conceptualScore,
         speedScore,
@@ -1088,7 +1109,6 @@
           <div class="summary-box">
             <div class="summary-title">Resumen del examen</div>
             <p><strong>Nombre del alumno:</strong> ${student.name}</p>
-            <p><strong>Grado:</strong> ${student.grade}</p>
             <p><strong>Preguntas acertadas:</strong> ${totalCorrect} de ${answeredCount}</p>
             <p><strong>Pistas pedidas:</strong> ${totalHintsRequested}</p>
             <p><strong>Tiempo total:</strong> ${formatTime(totalTimeSeconds)}</p>
