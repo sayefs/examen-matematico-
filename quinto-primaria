@@ -1,1 +1,1151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Evaluación Matemática Inteligente</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
+    :root {
+      --bg-main: #f6f8ff;
+      --card-bg: rgba(255,255,255,0.9);
+      --card-border: rgba(255,255,255,0.7);
+      --text-main: #24324a;
+      --text-soft: #60708a;
+      --primary: #6c8cff;
+      --primary-2: #8a6cff;
+      --success: #34c38f;
+      --warning: #ffcb57;
+      --danger: #ff7a7a;
+      --shadow: 0 18px 45px rgba(46, 68, 120, 0.16);
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      margin: 0;
+      padding: 24px;
+      overflow-x: hidden;
+      background-color: #eef3ff;
+      background-image:
+        linear-gradient(rgba(108,140,255,0.10) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(108,140,255,0.10) 1px, transparent 1px),
+        linear-gradient(135deg, #eef3ff 0%, #f9f6ff 55%, #eef8ff 100%);
+      background-size: 28px 28px, 28px 28px, auto;
+    }
+
+    .card {
+      background: var(--card-bg);
+      padding: 28px;
+      border-radius: 28px;
+      width: 100%;
+      max-width: 760px;
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--card-border);
+      position: relative;
+      overflow: visible;
+    }
+
+    h2 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-size: 28px;
+      color: #31456f;
+      text-align: center;
+    }
+
+    h3 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 21px;
+      color: #2e4066;
+    }
+
+    .subtitle {
+      margin: 0 0 20px 0;
+      color: var(--text-soft);
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .exam-layout,
+    .results-layout {
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    .start-box,
+    .question-shell {
+      animation: fadeUp 0.4s ease;
+    }
+
+    .top-bar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .top-left,
+    .top-right {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(108,140,255,0.10);
+      color: #395292;
+      font-weight: 700;
+      font-size: 14px;
+      border: 1px solid rgba(108,140,255,0.15);
+    }
+
+    .progress-wrap {
+      margin-bottom: 18px;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--text-soft);
+      margin-bottom: 8px;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 14px;
+      background: rgba(108,140,255,0.12);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-2));
+      transition: width 0.45s ease;
+      box-shadow: 0 0 16px rgba(108,140,255,0.35);
+    }
+
+    .question-panel {
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(125,145,210,0.18);
+      border-radius: 24px;
+      padding: 22px;
+      box-shadow: 0 10px 24px rgba(70, 96, 150, 0.08);
+    }
+
+    .image-box {
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto 14px auto;
+      background: rgba(108,140,255,0.06);
+      border-radius: 18px;
+      padding: 12px;
+      border: 1px solid rgba(108,140,255,0.10);
+    }
+
+    .hint-box {
+      width: 100%;
+      margin: 10px auto 0 auto;
+      animation: fadeUp 0.35s ease;
+    }
+
+    .question-image,
+    .hint-image {
+      display: block;
+      width: 100%;
+      max-height: 220px;
+      object-fit: contain;
+      border-radius: 12px;
+      background: white;
+      padding: 8px;
+    }
+
+    input,
+    select,
+    button {
+      width: 100%;
+      padding: 14px 16px;
+      margin-top: 12px;
+      border-radius: 14px;
+      border: none;
+      font-size: 15px;
+    }
+
+    input,
+    select {
+      background: rgba(255,255,255,0.96);
+      color: var(--text-main);
+      border: 1px solid rgba(108,140,255,0.14);
+      outline: none;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: rgba(108,140,255,0.45);
+      box-shadow: 0 0 0 3px rgba(108,140,255,0.10);
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .primary-btn {
+      background: linear-gradient(90deg, var(--primary), var(--primary-2));
+      color: white;
+      box-shadow: 0 10px 20px rgba(108,140,255,0.26);
+    }
+
+    .hint-theory-btn {
+      background: #fff1bf;
+      color: #7a5a00;
+    }
+
+    .hint-formula-btn {
+      background: #def7d6;
+      color: #2d6d2f;
+    }
+
+    .row-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: nowrap;
+      margin-top: 10px;
+      margin-bottom: 8px;
+    }
+
+    .row-buttons button {
+      flex: 1;
+      min-width: 0px;
+      margin-top: 0;
+    }
+
+    .helper-note {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--text-soft);
+      text-align: center;
+    }
+
+    .main-character-box {
+      position: fixed;
+      right: 24px;
+      bottom: 18px;
+      width: 170px;
+      z-index: 999;
+      pointer-events: none;
+    }
+
+    .main-character-img {
+      width: 100%;
+      display: block;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,0.18));
+    }
+
+    .hint-character-box {
+      position: fixed;
+      left: 28px;
+      bottom: 18px;
+      width: 150px;
+      z-index: 1000;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .hint-character-box.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .hint-character-img {
+      width: 100%;
+      display: block;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,0.18));
+    }
+
+    .hint-speech-bubble {
+      position: absolute;
+      left: 135px;
+      bottom: 145px;
+      width: 220px;
+      background: white;
+      color: #30435d;
+      padding: 12px 14px;
+      border-radius: 18px;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.14);
+      font-size: 14px;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+
+    .hint-speech-bubble::after {
+      content: "";
+      position: absolute;
+      left: -8px;
+      bottom: 28px;
+      width: 16px;
+      height: 16px;
+      background: white;
+      transform: rotate(45deg);
+    }
+
+    .fade-out {
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.22s ease, transform 0.22s ease;
+    }
+
+    .summary-box {
+      background: rgba(255,255,255,0.72);
+      padding: 18px;
+      border-radius: 18px;
+      margin-top: 14px;
+      border: 1px solid rgba(108,140,255,0.10);
+    }
+
+    .summary-box p {
+      margin: 8px 0;
+      line-height: 1.5;
+    }
+
+    .summary-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #2f4677;
+    }
+
+    .wa-btn {
+      display: block;
+      width: 100%;
+      max-width: 620px;
+      margin: 18px auto 0 auto;
+      background: #25D366;
+      color: white;
+      text-decoration: none;
+      text-align: center;
+      padding: 15px 18px;
+      border-radius: 14px;
+      font-weight: bold;
+      box-shadow: 0 10px 20px rgba(37,211,102,0.22);
+    }
+
+    .loading-text {
+      text-align: center;
+      font-size: 16px;
+      margin-top: 20px;
+      color: #41577f;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .main-character-box {
+        width: 130px;
+        right: 10px;
+        bottom: 10px;
+      }
+
+      .hint-character-box {
+        width: 120px;
+        left: 10px;
+        bottom: 10px;
+      }
+
+      .hint-speech-bubble {
+        width: 170px;
+        left: 92px;
+        bottom: 86px;
+        font-size: 13px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 14px;
+      }
+
+      .card {
+        padding: 18px;
+        border-radius: 22px;
+      }
+
+      .row-buttons {
+        flex-direction: column;
+      }
+
+      .row-buttons button {
+        min-width: 100%;
+      }
+
+      .question-image,
+      .hint-image {
+        max-height: 180px;
+      }
+
+      .main-character-box {
+        width: 112px;
+      }
+
+      .hint-character-box {
+        width: 102px;
+        left: 8px;
+        bottom: 8px;
+      }
+
+      .hint-speech-bubble {
+        width: 150px;
+        left: 78px;
+        bottom: 72px;
+        font-size: 12px;
+        padding: 10px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Evaluación Matemática</h2>
+    <div id="content"></div>
+  </div>
+
+  <div class="main-character-box">
+    <img id="mainCharacterImage" class="main-character-img" src="img/personaje-neutro.png" alt="Asistente principal">
+  </div>
+
+  <div id="hintCharacterBox" class="hint-character-box">
+    <div id="hintSpeechBubble" class="hint-speech-bubble"></div>
+    <img id="hintCharacterImage" class="hint-character-img" src="img/personaje-pista.png" alt="Asistente de pistas">
+  </div>
+
+  <script>
+    const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyx0VGt-WbzWl3LRuO3gkZQzDU6CW3tOMP_cPPK6JG44NLkjuN3qvAZEyapTdiLeufyHg/exec";
+    const WHATSAPP_LINK = "https://wa.me/51961760357?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20Matlab";
+
+    let student = {};
+    let responses = [];
+    let totalCorrect = 0;
+    let totalHintsRequested = 0;
+
+    let conceptualScore = 0;
+    let speedScore = 0;
+    let strategyScore = 0;
+
+    let examStartTime = null;
+    let questionStartTime = null;
+    let current = "q1";
+    let isSubmitting = false;
+
+    let currentHintsUsed = {
+      theory: false,
+      formula: false
+    };
+
+    let selectedQuestionCount = 10;
+    let answeredCount = 0;
+    let globalTimerInterval = null;
+    let mainCharacterTimeout = null;
+    let hintCharacterTimeout = null;
+
+    const MAIN_CHARACTER_IMAGES = {
+      normal: "img/personaje-neutro.png",
+      happy: "img/personaje-feliz.png",
+      sad: "img/personaje-triste.png"
+    };
+
+    const HINT_CHARACTER_IMAGE = "img/personaje-pista.png";
+
+    const hintTheoryMessages = [
+      "Te brindo una ayudita.",
+      "Piensa con calma, tú puedes.",
+      "Observa bien qué te pide el ejercicio.",
+      "Vamos paso a paso."
+    ];
+
+    const hintFormulaMessages = [
+      "No te preocupes, todos nos olvidamos algún tema.",
+      "Recuerda la regla y verás que sale.",
+      "Una formulita puede ayudarte mucho aquí.",
+      "Respira, revisemos la idea clave."
+    ];
+
+    const questions = {
+      q1: {
+        text: "Pregunta 1",
+        image: "https://i.imgur.com/31K9Atv.png",
+        correct: "1",
+        next: "q2",
+        hintTheoryImage: "https://i.imgur.com/Mg8qSo2.png",
+        hintFormulaImage: "https://i.imgur.com/PVh3iSG.png"
+      },
+      q2_good: {
+        text: "Pregunta 2",
+        image: "https://i.imgur.com/NkQApOk.png",
+        correct: "0",
+        next: "q3",
+        hintTheoryImage: "https://i.imgur.com/YvThtjC.png",
+        hintFormulaImage: "https://i.imgur.com/snanV35.png"
+      },
+      q2_bad: {
+        text: "Pregunta 2",
+        image: "https://i.imgur.com/hOUO50r.png",
+        correct: "4",
+        next: "q3",
+        hintTheoryImage: "https://i.imgur.com/selylST.png",
+        hintFormulaImage: "https://i.imgur.com/Yg2YswR.png"
+      },
+      q3: {
+        text: "Pregunta 3",
+        image: "https://i.imgur.com/K0CPI6C.png",
+        correct: "5/4",
+        next: "q4",
+        hintTheoryImage: "https://i.imgur.com/MgbcVUY.png",
+        hintFormulaImage: "https://i.imgur.com/xbCsMEe.png"
+      },
+      q4_good: {
+        text: "Pregunta 4",
+        image: "https://i.imgur.com/zOE6LHT.png",
+        correct: "5/2",
+        next: "q5",
+        hintTheoryImage: "https://i.imgur.com/HLstnlZ.png",
+        hintFormulaImage: "https://i.imgur.com/cBeRNFp.png"
+      },
+      q4_bad: {
+        text: "Pregunta 4",
+        image: "https://i.imgur.com/ve8LWNr.png",
+        correct: "2/3",
+        next: "q5",
+        hintTheoryImage: "https://i.imgur.com/uz6qYq9.png",
+        hintFormulaImage: "https://i.imgur.com/fvZ4JZc.png"
+      },
+      q5: {
+        text: "Pregunta 5",
+        image: "https://i.imgur.com/qPQmQgU.png",
+        correct: "12",
+        next: "q6",
+        hintTheoryImage: "https://i.imgur.com/73C6Snu.png",
+        hintFormulaImage: "https://i.imgur.com/eDZFcxC.png"
+      },
+      q6_good: {
+        text: "Pregunta 6",
+        image: "https://i.imgur.com/L7tKC0a.png",
+        correct: "32",
+        next: "q7",
+        hintTheoryImage: "https://i.imgur.com/GPusYBX.png",
+        hintFormulaImage: "https://i.imgur.com/rB9kNhJ.png"
+      },
+      q6_bad: {
+        text: "Pregunta 6",
+        image: "https://i.imgur.com/7bzMbQU.png",
+        correct: "2",
+        next: "q7",
+        hintTheoryImage: "https://i.imgur.com/lNDPK0g.png",
+        hintFormulaImage: "https://i.imgur.com/zwTR3bl.png"
+      },
+      q7: {
+        text: "Pregunta 7",
+        image: "https://i.imgur.com/PvSe30k.png",
+        correct: "16",
+        next: "q8",
+        hintTheoryImage: "https://i.imgur.com/7i4H3uS.png",
+        hintFormulaImage: "https://i.imgur.com/CXJQHvN.png"
+      },
+      q8_good: {
+        text: "Pregunta 8",
+        image: "https://i.imgur.com/epSYQjq.png",
+        correct: "14",
+        next: "q9",
+        hintTheoryImage: "https://i.imgur.com/CBG1Vrk.png",
+        hintFormulaImage: "https://i.imgur.com/gOoFYW2.png"
+      },
+      q8_bad: {
+        text: "Pregunta 8",
+        image: "https://i.imgur.com/ADC5hHr.png",
+        correct: "11",
+        next: "q9",
+        hintTheoryImage: "https://i.imgur.com/7i4H3uS.png",
+        hintFormulaImage: "https://i.imgur.com/ULmjETz.png"
+      },
+      q9: {
+        text: "Pregunta 9",
+        image: "https://i.imgur.com/VvsgR0i.png",
+        correct: "4",
+        next: "q10",
+        hintTheoryImage: "https://i.imgur.com/XhPSS1c.png",
+        hintFormulaImage: "https://i.imgur.com/iJaJX6y.png"
+      },
+      q10: {
+        text: "Pregunta 10",
+        image: "https://i.imgur.com/81bzbNi.png",
+        correct: "6",
+        next: null,
+        hintTheoryImage: "https://i.imgur.com/q1IVVsX.png",
+        hintFormulaImage: "https://i.imgur.com/WMhQYcS.png"
+      }
+    };
+
+    function randomFrom(list) {
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    function formatClock(totalSeconds) {
+      const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+      const seconds = String(totalSeconds % 60).padStart(2, "0");
+      return `${minutes}:${seconds}`;
+    }
+
+    function formatTime(totalSeconds) {
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${minutes}m ${seconds}s`;
+    }
+
+    function getProgressPercent() {
+      return (answeredCount / selectedQuestionCount) * 100;
+    }
+
+    function setMainCharacter(state = "normal", autoReturn = true) {
+      const img = document.getElementById("mainCharacterImage");
+      if (!img) return;
+
+      if (mainCharacterTimeout) {
+        clearTimeout(mainCharacterTimeout);
+      }
+
+      img.src = MAIN_CHARACTER_IMAGES[state] || MAIN_CHARACTER_IMAGES.normal;
+
+      if (autoReturn && state !== "normal") {
+        mainCharacterTimeout = setTimeout(() => {
+          img.src = MAIN_CHARACTER_IMAGES.normal;
+        }, 1800);
+      }
+    }
+
+    function showHintCharacter(message) {
+      const box = document.getElementById("hintCharacterBox");
+      const bubble = document.getElementById("hintSpeechBubble");
+      const img = document.getElementById("hintCharacterImage");
+
+      if (!box || !bubble || !img) return;
+
+      if (hintCharacterTimeout) {
+        clearTimeout(hintCharacterTimeout);
+      }
+
+      img.src = HINT_CHARACTER_IMAGE;
+      bubble.textContent = message;
+      box.classList.add("show");
+
+      hintCharacterTimeout = setTimeout(() => {
+        box.classList.remove("show");
+      }, 2400);
+    }
+
+    function startGlobalTimer() {
+      if (globalTimerInterval) {
+        clearInterval(globalTimerInterval);
+      }
+
+      globalTimerInterval = setInterval(() => {
+        if (!examStartTime) return;
+        const totalSeconds = Math.round((Date.now() - examStartTime) / 1000);
+        const timerEl = document.getElementById("globalTimer");
+        if (timerEl) {
+          timerEl.textContent = `⏱ ${formatClock(totalSeconds)}`;
+        }
+      }, 1000);
+    }
+
+    function renderTopBar() {
+      const questionNumber = Math.min(answeredCount + 1, selectedQuestionCount);
+      const progress = getProgressPercent();
+
+      return `
+        <div class="top-bar">
+          <div class="top-left">
+            <div class="pill">Pregunta ${questionNumber} de ${selectedQuestionCount}</div>
+          </div>
+          <div class="top-right">
+            <div class="pill" id="globalTimer">⏱ ${examStartTime ? formatClock(Math.round((Date.now() - examStartTime) / 1000)) : "00:00"}</div>
+          </div>
+        </div>
+
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span>Tu avance</span>
+            <span>${Math.round(progress)}%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-bar" style="width:${progress}%"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function transitionToQuestion(nextId) {
+      const content = document.getElementById("content");
+      if (!content) return showQuestion(nextId);
+
+      content.classList.add("fade-out");
+
+      setTimeout(() => {
+        content.classList.remove("fade-out");
+        showQuestion(nextId);
+      }, 220);
+    }
+
+    function renderStart() {
+      document.getElementById("content").innerHTML = `
+        <div class="exam-layout start-box">
+          <p class="subtitle">
+            Completa los datos del alumno para comenzar. Luego podrás elegir si deseas resolver 6, 8 o 10 preguntas.
+          </p>
+
+          <input id="studentName" placeholder="Nombre del alumno">
+          <input id="studentAge" placeholder="Edad del alumno" type="number">
+
+          <select id="questionCount">
+            <option value="10">Resolver 10 preguntas</option>
+            <option value="8">Resolver 8 preguntas</option>
+            <option value="6">Resolver 6 preguntas</option>
+          </select>
+
+          <button class="primary-btn" onclick="startExam()">Comenzar</button>
+        </div>
+      `;
+
+      setMainCharacter("normal", false);
+    }
+
+    function startExam() {
+      student = {};
+      student.name = document.getElementById("studentName").value.trim();
+      student.age = document.getElementById("studentAge").value.trim();
+      student.grade = "";
+      student.guardianName = "";
+      student.guardianPhone = "";
+      student.institutionType = "";
+
+      selectedQuestionCount = parseInt(document.getElementById("questionCount").value, 10) || 10;
+
+      if (!student.name || !student.age) {
+        alert("Completa los datos del alumno.");
+        return;
+      }
+
+      responses = [];
+      totalCorrect = 0;
+      totalHintsRequested = 0;
+      conceptualScore = 0;
+      speedScore = 0;
+      strategyScore = 0;
+      answeredCount = 0;
+      isSubmitting = false;
+
+      examStartTime = Date.now();
+      startGlobalTimer();
+      setMainCharacter("normal", false);
+      showQuestion("q1");
+    }
+
+    function showQuestion(id) {
+      current = id;
+      questionStartTime = Date.now();
+      currentHintsUsed = { theory: false, formula: false };
+
+      const q = questions[id];
+
+      document.getElementById("content").innerHTML = `
+        <div class="exam-layout question-shell">
+          ${renderTopBar()}
+
+          <div class="question-panel">
+            <h3>${q.text}</h3>
+
+            <div class="image-box">
+              <img class="question-image" src="${q.image}" alt="Pregunta">
+            </div>
+
+            <div class="row-buttons">
+              <button class="hint-theory-btn" id="btnTheoryHint" onclick="showHint('theory')">💡 ¡Dame una pista!</button>
+              <button class="hint-formula-btn" id="btnFormulaHint" onclick="showHint('formula')">📘 ¡Dame otra pista!</button>
+            </div>
+
+            <div id="hintTheoryContainer"></div>
+            <div id="hintFormulaContainer"></div>
+
+            <input id="answer" placeholder="Escribe tu respuesta">
+            <button class="primary-btn" onclick="submitAnswer()">Responder</button>
+
+            <div class="helper-note">Responde con calma. Si necesitas ayuda, puedes pedir una pista.</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function showHint(type) {
+      const q = questions[current];
+
+      if (type === "theory" && !currentHintsUsed.theory) {
+        currentHintsUsed.theory = true;
+        totalHintsRequested++;
+
+        document.getElementById("hintTheoryContainer").innerHTML = `
+          <div class="hint-box">
+            <div class="image-box">
+              <img class="hint-image" src="${q.hintTheoryImage}" alt="Pista teórica">
+            </div>
+          </div>
+        `;
+
+        const btn = document.getElementById("btnTheoryHint");
+        if (btn) {
+          btn.disabled = true;
+          btn.style.opacity = "0.65";
+        }
+
+        showHintCharacter(randomFrom(hintTheoryMessages));
+      }
+
+      if (type === "formula" && !currentHintsUsed.formula) {
+        currentHintsUsed.formula = true;
+        totalHintsRequested++;
+
+        document.getElementById("hintFormulaContainer").innerHTML = `
+          <div class="hint-box">
+            <div class="image-box">
+              <img class="hint-image" src="${q.hintFormulaImage}" alt="Pista fórmula">
+            </div>
+          </div>
+        `;
+
+        const btn = document.getElementById("btnFormulaHint");
+        if (btn) {
+          btn.disabled = true;
+          btn.style.opacity = "0.65";
+        }
+
+        showHintCharacter(randomFrom(hintFormulaMessages));
+      }
+    }
+
+    function countHintsUsed() {
+      let count = 0;
+      if (currentHintsUsed.theory) count++;
+      if (currentHintsUsed.formula) count++;
+      return count;
+    }
+
+    function getConceptualPoints(isCorrect, hints) {
+      if (!isCorrect) return 0;
+      if (hints === 0) return 3;
+      if (hints === 1) return 2;
+      return 1;
+    }
+
+    function getSpeedPoints(isCorrect, timeSeconds) {
+      if (!isCorrect) return 0;
+      if (timeSeconds < 180) return 3;
+      if (timeSeconds <= 300) return 2;
+      return 1;
+    }
+
+    function getStrategyPoints(questionId, isCorrect, hints) {
+      const match = questionId.match(/^q(\d+)/);
+      if (!match) return 0;
+
+      const number = parseInt(match[1], 10);
+      const isEven = number % 2 === 0;
+
+      if (!isEven || !isCorrect) return 0;
+
+      if (hints === 0) return 3;
+      if (hints === 1) return 2;
+      return 1;
+    }
+
+    function getPercentage(score, maxScore) {
+      if (!maxScore || maxScore <= 0) return 0;
+      return Math.round((score / maxScore) * 100);
+    }
+
+    function getConclusionByPercentage(percentage, type) {
+      if (type === "conceptual") {
+        if (percentage < 40) return "Poca base teórica, necesita apoyo constante.";
+        if (percentage < 70) return "Tiene nociones, pero debe practicar bastante.";
+        if (percentage < 90) return "Nivel teórico bueno, puede seguir fortaleciendo.";
+        return "Muy buen nivel de comprensión conceptual.";
+      }
+
+      if (type === "speed") {
+        if (percentage < 40) return "Necesita mejorar bastante su rapidez de resolución.";
+        if (percentage < 70) return "Tiene un ritmo intermedio, pero puede agilizarse.";
+        if (percentage < 90) return "Buen ritmo de resolución.";
+        return "Muy buen nivel de rapidez.";
+      }
+
+      if (type === "strategy") {
+        if (percentage < 40) return "Necesita reforzar su estrategia matemática.";
+        if (percentage < 70) return "Tiene algunas estrategias, pero puede mejorar.";
+        if (percentage < 90) return "Buen manejo de estrategias matemáticas.";
+        return "Muy buen nivel de estrategia matemática.";
+      }
+
+      return "";
+    }
+
+    function submitAnswer() {
+      const q = questions[current];
+      const answer = document.getElementById("answer").value.trim();
+
+      if (!answer) {
+        alert("Escribe una respuesta antes de continuar.");
+        return;
+      }
+
+      const timeSeconds = Math.round((Date.now() - questionStartTime) / 1000);
+      const normalizedAnswer = answer.replace(/\s+/g, "");
+      const normalizedCorrect = String(q.correct).replace(/\s+/g, "");
+      const isCorrect = normalizedAnswer === normalizedCorrect;
+      const hints = countHintsUsed();
+
+      if (isCorrect) totalCorrect++;
+
+      const conceptualPoints = getConceptualPoints(isCorrect, hints);
+      const speedPoints = getSpeedPoints(isCorrect, timeSeconds);
+      const strategyPoints = getStrategyPoints(current, isCorrect, hints);
+
+      conceptualScore += conceptualPoints;
+      speedScore += speedPoints;
+      strategyScore += strategyPoints;
+
+      responses.push({
+        questionId: current,
+        answer,
+        correct: isCorrect,
+        timeSeconds,
+        hintsUsed: hints,
+        conceptualPoints,
+        speedPoints,
+        strategyPoints
+      });
+
+      answeredCount++;
+
+      if (isCorrect) {
+        setMainCharacter("happy", true);
+      } else {
+        setMainCharacter("sad", true);
+      }
+
+      let next;
+      if (
+        current === "q2_good" ||
+        current === "q2_bad" ||
+        current === "q4_good" ||
+        current === "q4_bad" ||
+        current === "q6_good" ||
+        current === "q6_bad" ||
+        current === "q8_good" ||
+        current === "q8_bad"
+      ) {
+        next = q.next;
+      } else if (q.next && questions[q.next + "_good"]) {
+        next = isCorrect ? q.next + "_good" : q.next + "_bad";
+      } else {
+        next = q.next;
+      }
+
+      if (answeredCount >= selectedQuestionCount || !next) {
+        setTimeout(() => renderParentForm(), 700);
+      } else {
+        setTimeout(() => transitionToQuestion(next), 700);
+      }
+    }
+
+    function renderParentForm() {
+      document.getElementById("content").innerHTML = `
+        <div class="exam-layout start-box">
+          <h3>Antes de ver los resultados</h3>
+          <p class="subtitle">Completa estos datos para continuar</p>
+
+          <input id="guardianName" placeholder="Nombre del padre, madre o apoderado">
+          <input id="guardianPhone" placeholder="Teléfono del padre, madre o apoderado">
+
+          <select id="institutionType">
+            <option value="">Institución del alumno</option>
+            <option value="Pública">Pública</option>
+            <option value="Privada">Privada</option>
+          </select>
+
+          <button class="primary-btn" onclick="saveParentAndFinish()">Ver resultados</button>
+        </div>
+      `;
+    }
+
+    function saveParentAndFinish() {
+      student.guardianName = document.getElementById("guardianName").value.trim();
+      student.guardianPhone = document.getElementById("guardianPhone").value.trim();
+      student.institutionType = document.getElementById("institutionType").value;
+      student.grade = "";
+
+      if (!student.guardianName || !student.guardianPhone || !student.institutionType) {
+        alert("Completa todos los datos.");
+        return;
+      }
+
+      finishExam();
+    }
+
+    async function saveResults(payload) {
+      try {
+        if (!WEBHOOK_URL || WEBHOOK_URL === "PEGA_AQUI_TU_LINK_DE_APPS_SCRIPT") {
+          console.log("Webhook no configurado.");
+          return;
+        }
+
+        await fetch(WEBHOOK_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        console.log("Solicitud enviada al webhook.");
+      } catch (error) {
+        console.error("Error guardando resultados:", error);
+      }
+    }
+
+    async function finishExam() {
+      if (isSubmitting) return;
+      isSubmitting = true;
+
+      if (globalTimerInterval) {
+        clearInterval(globalTimerInterval);
+        globalTimerInterval = null;
+      }
+
+      const totalTimeSeconds = Math.round((Date.now() - examStartTime) / 1000);
+
+      const maxConceptualScore = answeredCount * 3;
+      const maxSpeedScore = answeredCount * 3;
+      const maxStrategyQuestions = Math.floor(answeredCount / 2);
+      const maxStrategyScore = maxStrategyQuestions * 3;
+
+      const conceptualPercentage = getPercentage(conceptualScore, maxConceptualScore);
+      const speedPercentage = getPercentage(speedScore, maxSpeedScore);
+      const strategyPercentage = getPercentage(strategyScore, maxStrategyScore);
+
+      const conceptualAI = getConclusionByPercentage(conceptualPercentage, "conceptual");
+      const speedAI = getConclusionByPercentage(speedPercentage, "speed");
+      const strategyAI = getConclusionByPercentage(strategyPercentage, "strategy");
+
+      const payloadToSave = {
+        guardianName: student.guardianName,
+        guardianPhone: student.guardianPhone,
+        studentName: student.name,
+        studentAge: student.age,
+        studentGrade: student.grade || "",
+        institutionType: student.institutionType,
+        selectedQuestionCount,
+        totalTimeSeconds,
+        conceptualScore,
+        speedScore,
+        strategyScore,
+        maxConceptualScore,
+        maxSpeedScore,
+        maxStrategyScore,
+        conceptualPercentage,
+        speedPercentage,
+        strategyPercentage,
+        correctAnswers: totalCorrect,
+        hintsRequested: totalHintsRequested,
+        responses
+      };
+
+      document.getElementById("content").innerHTML = `
+        <div class="loading-text">Procesando resultados...</div>
+      `;
+
+      await saveResults(payloadToSave);
+
+      setMainCharacter("happy", false);
+
+      document.getElementById("content").innerHTML = `
+        <div class="results-layout">
+          <div class="summary-box">
+            <div class="summary-title">Resumen del examen</div>
+            <p><strong>Nombre del alumno:</strong> ${student.name}</p>
+            <p><strong>Preguntas acertadas:</strong> ${totalCorrect} de ${answeredCount}</p>
+            <p><strong>Pistas pedidas:</strong> ${totalHintsRequested}</p>
+            <p><strong>Tiempo total:</strong> ${formatTime(totalTimeSeconds)}</p>
+          </div>
+
+          <div class="summary-box">
+            <p><strong>Puntaje en comprensión conceptual:</strong> ${conceptualPercentage}%</p>
+            <p>${conceptualAI}</p>
+          </div>
+
+          <div class="summary-box">
+            <p><strong>Puntaje en rapidez:</strong> ${speedPercentage}%</p>
+            <p>${speedAI}</p>
+          </div>
+
+          <div class="summary-box">
+            <p><strong>Puntaje en estrategia matemática:</strong> ${strategyPercentage}%</p>
+            <p>${strategyAI}</p>
+          </div>
+
+          <a class="wa-btn" href="${WHATSAPP_LINK}" target="_blank">
+            Contactar por WhatsApp a Matlab
+          </a>
+        </div>
+      `;
+    }
+
+    renderStart();
+  </script>
+</body>
+</html>
